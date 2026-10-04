@@ -239,3 +239,8 @@ button:focus-visible, input:focus-visible, a:focus-visible {
 .mini-card.red { color: #c0392b; }
 .mini-card.joker { color: #c0392b; font-size: 12px; font-weight: 800; line-height: 1; }
 .mini-card.joker span { width: min-content; word-break: break-all; text-align: center; }
+.poker-chips { display: flex; flex-direction: column-reverse; margin-left: 6px; }
+.poker-chips i { width: 34px; height: 9px; margin-top: -2px; border: 2px dashed rgba(255, 255, 255, 0.85); border-radius: 50%; background: #c2563f; box-shadow: 0 2px 3px rgba(0, 0, 0, 0.3); }
+.poker-chips i:nth-child(2) { background: #3f6f9c; }
+.poker-chips i:nth-child(3) { background: #2f2f2f; }
+

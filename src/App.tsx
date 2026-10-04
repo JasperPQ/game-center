@@ -23,6 +23,13 @@ const GAMES = [
     description: "对家是队友，逢人配、炸弹、同花顺，从 2 一路打到 A，先过 A 的一队获胜。",
     url: gameUrl("/guandan/", 5174),
   },
+  {
+    id: "poker",
+    name: "德州扑克",
+    tagline: "2–6 人 · 约 1 小时",
+    description: "无限注淘汰赛：两张底牌、五张公共牌，诈唬与跟注之间，打到最后一人获胜。",
+    url: gameUrl("/poker/", 5176),
+  },
 ] as const;
 
 function GemArt() {
@@ -43,6 +50,16 @@ function GuandanArt() {
       <span className="mini-card"><b>A</b>♠</span>
       <span className="mini-card red"><b>2</b>♥</span>
       <span className="mini-card joker"><span>JOKER</span></span>
+    </div>
+  );
+}
+
+function PokerArt() {
+  return (
+    <div className="game-art game-art-cards" aria-hidden="true">
+      <span className="mini-card"><b>A</b>♠</span>
+      <span className="mini-card red"><b>A</b>♥</span>
+      <span className="poker-chips"><i /><i /><i /></span>
     </div>
   );
 }
@@ -118,7 +135,7 @@ function App() {
       <section className="game-grid" aria-label="选择游戏">
         {GAMES.map((game) => (
           <a className={`game-card game-card-${game.id}`} href={game.url} key={game.id}>
-            {game.id === "gem-merchant" ? <GemArt /> : <GuandanArt />}
+            {game.id === "gem-merchant" ? <GemArt /> : game.id === "guandan" ? <GuandanArt /> : <PokerArt />}
             <div className="game-card-body">
               <span className="game-card-tagline">{game.tagline}</span>
               <h2>{game.name}</h2>
