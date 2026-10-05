@@ -30,6 +30,13 @@ const GAMES = [
     description: "无限注淘汰赛：两张底牌、五张公共牌，诈唬与跟注之间，打到最后一人获胜。",
     url: gameUrl("/poker/", 5176),
   },
+  {
+    id: "jingmai",
+    name: "晶脉",
+    tagline: "2–4 人 · 测试版",
+    description: "所有人同时行动，下到三层矿洞挖宝石、运回营地。挖得越多越值钱，矿洞也塌得越快。",
+    url: gameUrl("/jingmai/", 5177),
+  },
 ] as const;
 
 function GemArt() {
@@ -60,6 +67,19 @@ function PokerArt() {
       <span className="mini-card"><b>A</b>♠</span>
       <span className="mini-card red"><b>A</b>♥</span>
       <span className="poker-chips"><i /><i /><i /></span>
+    </div>
+  );
+}
+
+function JingmaiArt() {
+  return (
+    <div className="game-art game-art-jingmai" aria-hidden="true">
+      <span className="strata">
+        <i className="stratum stratum-1"><b className="crystal cyan" /><b className="crystal red" /></i>
+        <i className="stratum stratum-2"><b className="crystal green" /><b className="crystal purple" /></i>
+        <i className="stratum stratum-3"><b className="crystal gold" /></i>
+        <i className="shaft" />
+      </span>
     </div>
   );
 }
@@ -135,7 +155,10 @@ function App() {
       <section className="game-grid" aria-label="选择游戏">
         {GAMES.map((game) => (
           <a className={`game-card game-card-${game.id}`} href={game.url} key={game.id}>
-            {game.id === "gem-merchant" ? <GemArt /> : game.id === "guandan" ? <GuandanArt /> : <PokerArt />}
+            {game.id === "gem-merchant" ? <GemArt />
+              : game.id === "guandan" ? <GuandanArt />
+              : game.id === "jingmai" ? <JingmaiArt />
+              : <PokerArt />}
             <div className="game-card-body">
               <span className="game-card-tagline">{game.tagline}</span>
               <h2>{game.name}</h2>

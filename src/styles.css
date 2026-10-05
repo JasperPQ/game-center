@@ -244,3 +244,27 @@ button:focus-visible, input:focus-visible, a:focus-visible {
 .poker-chips i:nth-child(2) { background: #3f6f9c; }
 .poker-chips i:nth-child(3) { background: #2f2f2f; }
 
+/* 晶脉：三层逐渐变窄的六边形矿层，中间一条电梯井 */
+.strata { position: relative; width: 170px; height: 112px; }
+.stratum {
+  position: absolute;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  transform: translateX(-50%);
+  clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+}
+.stratum-1 { top: 0; width: 170px; height: 34px; background: #e9e0cb; }
+.stratum-2 { top: 42px; width: 118px; height: 30px; background: #cfc2a5; }
+.stratum-3 { top: 80px; width: 72px; height: 26px; background: #b3a27f; }
+.shaft { position: absolute; left: 50%; top: 8px; width: 4px; height: 96px; margin-left: -2px; border-radius: 2px; background: rgba(214, 170, 74, 0.9); }
+.crystal { width: 13px; height: 13px; transform: rotate(45deg); border: 1px solid rgba(255, 255, 255, 0.7); }
+.crystal.cyan { background: #4f9a9c; }
+.crystal.red { background: #b5594a; }
+.crystal.green { background: #5f9852; }
+.crystal.purple { background: #7d5ea3; }
+.crystal.gold { background: #cfa23d; }
+
