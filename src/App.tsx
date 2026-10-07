@@ -1,7 +1,11 @@
 import { useEffect, useState, type FormEvent } from "react";
 import type { GuestbookEntry } from "../shared/types";
+import { useBoardStyle } from "./boardStyle";
 import Guestbook from "./Guestbook";
 import { socket } from "./socket";
+import "./style-toggle.css";
+// 像素风皮肤：只在像素版时放进页面，叠在原始的 styles.css 上。
+import centerPixelCss from "./center-pixel.css?inline";
 
 /** 线上按路径访问各游戏；本地开发时各游戏跑在自己的端口上。 */
 function gameUrl(path: string, devPort: number): string {
@@ -92,6 +96,9 @@ function App() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  // 画面风格（默认像素版），顶栏按钮随时切换；和宝石商人共用同一个选择。
+  const [boardStyle, toggleBoardStyle] = useBoardStyle();
+  const pixel = boardStyle === "pixel";
 
   useEffect(() => {
     const handleConnect = () => {
@@ -135,14 +142,25 @@ function App() {
 
   return (
     <main className="app-shell">
+      {pixel && <style>{centerPixelCss}</style>}
       <header className="topbar">
         <a className="brand" href="/" aria-label="Game Center 首页">
           <span className="brand-mark" aria-hidden="true"><i /><i /><i /></span>
           <span className="brand-name">Game Center<span> 游戏中心</span></span>
         </a>
-        <div className={connected ? "connection-status online" : "connection-status"}>
-          <span className="connection-dot" />
-          {connected ? "服务已连接" : "连接中…"}
+        <div className="topbar-right">
+          <button
+            type="button"
+            className="quiet-button style-toggle"
+            onClick={toggleBoardStyle}
+            title={pixel ? "换回原始版本的画面（只影响你自己看到的）" : "换成像素风画面（只影响你自己看到的）"}
+          >
+            {pixel ? "切换原版" : "切换像素版"}
+          </button>
+          <div className={connected ? "connection-status online" : "connection-status"}>
+            <span className="connection-dot" />
+            {connected ? "服务已连接" : "连接中…"}
+          </div>
         </div>
       </header>
 

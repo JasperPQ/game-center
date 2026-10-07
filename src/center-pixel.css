@@ -1,0 +1,246 @@
+/*
+ * 游戏中心的像素风皮肤。只在像素版时放进页面，叠在原始的 styles.css 上面；
+ * 切回原始版本时整份移除，styles.css 本身不改。配色、边框、字体和宝石商人的像素版一致。
+ * 原样式里有些 hover / focus / nth-child 规则选择器更具体，这里对应的规则都加了 .app-shell 前缀压过它们。
+ * 字号只用 12 的整数倍才清晰。
+ */
+
+@font-face {
+  font-family: "Fusion Pixel";
+  src: url("./assets/pixel/fusion-pixel-12px-zh_hans.woff2") format("woff2");
+  font-display: swap;
+}
+
+:root { color-scheme: dark; background: #0e0c13; }
+body { background: repeating-conic-gradient(#13101a 0 25%, #0e0c13 0 50%) 0 0 / 4px 4px; }
+
+.app-shell {
+  --px: 2px;
+  --bg: #0e0c13;
+  --panel: #1c1826;
+  --panel-2: #262033;
+  --edge: #050408;
+  --rim: #4a3f63;
+  --shade: #0b0a10;
+  --text: #f1ece0;
+  --muted: #9a93ad;
+  --gold: #f0c050;
+  --gold-2: #b3821c;
+  --ok: #62c97a;
+  --bad: #f25c5c;
+  color: var(--text);
+  font-family: "Fusion Pixel", -apple-system, "PingFang SC", sans-serif;
+  font-size: 12px;
+  line-height: 1.5;
+  -webkit-font-smoothing: none;
+  font-smooth: never;
+}
+.app-shell :is(button, input, textarea) { font-family: inherit; font-size: 12px; letter-spacing: 0; }
+.app-shell * { scrollbar-color: var(--rim) var(--bg); scrollbar-width: thin; }
+.app-shell :focus-visible { outline: var(--px) solid var(--gold); outline-offset: calc(var(--px) * 2); }
+
+/* ---------- 像素边框：四边各一条黑边、角上留空，内侧亮边 + 暗边 ---------- */
+.app-shell :is(
+  .game-card, .game-card-enter, .guestbook-form, .guestbook-list, .guestbook-count, .text-input, .primary-button,
+  .quiet-button, .guestbook-delete, .guestbook-entry-avatar, .guestbook-admin, .guestbook-admin-button, .mini-card
+) {
+  border: 0;
+  border-radius: 0;
+  box-shadow:
+    0 calc(var(--px) * -1) 0 0 var(--edge),
+    0 var(--px) 0 0 var(--edge),
+    calc(var(--px) * -1) 0 0 0 var(--edge),
+    var(--px) 0 0 0 var(--edge),
+    inset var(--px) var(--px) 0 0 var(--rim),
+    inset calc(var(--px) * -1) calc(var(--px) * -1) 0 0 var(--shade);
+}
+
+/* ---------- 按钮：靛蓝（普通）、金色（主要）、红色（危险）；按下时下沉一格 ---------- */
+.app-shell :is(.quiet-button, .guestbook-admin-button) {
+  --rim: #6b5c8f;
+  --shade: #141119;
+  padding: 6px 12px;
+  color: var(--text);
+  background: #332b44;
+  cursor: pointer;
+  font-size: 12px;
+}
+.app-shell :is(.primary-button, .game-card-enter) { --rim: #fff2b8; --shade: #7a5410; color: #2a1c06; background: var(--gold); font-weight: 400; }
+.app-shell .guestbook-delete { --rim: #f25c5c; --shade: #3d0a12; padding: 0 6px; color: #ffd8d0; background: #6e1020; font-size: 12px; }
+.app-shell :is(.quiet-button, .guestbook-admin-button, .guestbook-delete):hover:not(:disabled) { filter: brightness(1.15); }
+.app-shell .guestbook-delete:hover:not(:disabled) { background: #6e1020; }
+.app-shell .primary-button:hover:not(:disabled) {
+  background: var(--gold);
+  filter: brightness(1.1);
+  transform: none;
+  box-shadow:
+    0 calc(var(--px) * -1) 0 0 var(--edge),
+    0 var(--px) 0 0 var(--edge),
+    calc(var(--px) * -1) 0 0 0 var(--edge),
+    var(--px) 0 0 0 var(--edge),
+    inset var(--px) var(--px) 0 0 var(--rim),
+    inset calc(var(--px) * -1) calc(var(--px) * -1) 0 0 var(--shade);
+}
+.app-shell :is(.primary-button, .quiet-button, .guestbook-admin-button, .guestbook-delete):active:not(:disabled) {
+  transform: translateY(var(--px));
+  --rim: var(--shade);
+}
+.app-shell :is(.primary-button, .quiet-button, .guestbook-admin-button, .guestbook-delete):disabled {
+  cursor: default;
+  opacity: 1;
+  filter: grayscale(0.6) brightness(0.7);
+}
+
+/* ---------- 顶栏 ---------- */
+.app-shell .topbar { border-bottom: var(--px) solid #332b44; }
+.app-shell .topbar-right { display: flex; align-items: center; gap: 14px; }
+.app-shell .brand { color: var(--text); gap: 8px; }
+.app-shell .brand-mark { width: 24px; height: 24px; border: 0; border-radius: 0; transform: none; padding: 0; gap: 2px; }
+.app-shell .brand-mark i { width: 6px; border-radius: 0; }
+.app-shell .brand-mark i:nth-child(1) { background: #3f79b8; }
+.app-shell .brand-mark i:nth-child(2) { background: var(--gold); }
+.app-shell .brand-mark i:nth-child(3) { background: #d42c3c; }
+.app-shell .brand-name { font-size: 12px; font-weight: 400; letter-spacing: 0; }
+.app-shell .brand-name span { margin-left: 8px; color: var(--muted); font-size: 12px; font-weight: 400; letter-spacing: 0.1em; }
+.app-shell .connection-status { gap: 6px; color: var(--muted); font-size: 12px; }
+.app-shell .connection-dot { width: 6px; height: 6px; border-radius: 0; background: var(--gold-2); }
+.app-shell .connection-status.online .connection-dot { background: var(--ok); box-shadow: none; }
+
+/* ---------- 标题区 ---------- */
+.app-shell .eyebrow { gap: 10px; color: var(--muted); font-size: 12px; font-weight: 400; letter-spacing: 0.1em; }
+.app-shell .eyebrow-line { width: 24px; height: var(--px); background: var(--gold); }
+.app-shell .hero h1 {
+  margin: 18px 0 14px;
+  color: var(--gold);
+  font-family: inherit;
+  font-size: 72px;
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 1.1;
+  text-shadow: calc(var(--px) * 2) calc(var(--px) * 2) 0 var(--edge);
+}
+.app-shell .hero p { color: var(--muted); font-size: 12px; line-height: 2; }
+
+/* ---------- 游戏卡片 ---------- */
+.app-shell .game-card { color: var(--text); background: var(--panel); transition: none; }
+.app-shell .game-card:hover {
+  --rim: var(--gold);
+  transform: translateY(calc(var(--px) * -2));
+  box-shadow:
+    0 calc(var(--px) * -1) 0 0 var(--edge),
+    0 var(--px) 0 0 var(--edge),
+    calc(var(--px) * -1) 0 0 0 var(--edge),
+    var(--px) 0 0 0 var(--edge),
+    inset var(--px) var(--px) 0 0 var(--rim),
+    inset calc(var(--px) * -1) calc(var(--px) * -1) 0 0 var(--shade);
+}
+.app-shell .game-card-body { padding: 18px 20px 20px; }
+.app-shell .game-card-tagline { color: var(--gold); font-size: 12px; font-weight: 400; letter-spacing: 0.05em; }
+.app-shell .game-card h2 { margin: 6px 0 8px; color: var(--text); font-family: inherit; font-size: 24px; font-weight: 400; }
+.app-shell .game-card p { margin-bottom: 18px; color: var(--muted); font-size: 12px; line-height: 1.75; }
+.app-shell .game-card-enter { padding: 6px 16px; font-size: 12px; }
+.app-shell .game-card:hover .game-card-enter { filter: brightness(1.1); }
+
+/* 卡片上方的小插图：牌桌绿底换成像素棋盘纹，下沿一条木色像素边 */
+.app-shell .game-art {
+  margin: var(--px);
+  border-bottom: calc(var(--px) * 3) solid #6f4f37;
+  background: repeating-conic-gradient(#1d3e31 0 25%, #1a3a2d 0 50%) 0 0 / 4px 4px;
+}
+.app-shell .gem { width: 32px; height: 32px; border-radius: 0; transform: none; box-shadow: none; background: center / contain no-repeat; image-rendering: pixelated; }
+.app-shell .game-art .gem { width: 40px; height: 40px; }
+.app-shell .gem-white { background-image: url("./assets/pixel/tokens/white.png"); }
+.app-shell .gem-blue { background-image: url("./assets/pixel/tokens/blue.png"); }
+.app-shell .gem-green { background-image: url("./assets/pixel/tokens/green.png"); }
+.app-shell .gem-red { background-image: url("./assets/pixel/tokens/red.png"); }
+.app-shell .gem-black { background-image: url("./assets/pixel/tokens/black.png"); }
+.app-shell .mini-card { --rim: #ffffff; --shade: #c9c2b0; width: 52px; height: 72px; color: #141218; background: #f1ece0; font-size: 24px; line-height: 1; }
+.app-shell .mini-card b { font-size: 24px; font-weight: 400; }
+.app-shell .mini-card:nth-child(1) { transform: translateY(6px); }
+.app-shell .mini-card:nth-child(3) { transform: translateY(6px); }
+.app-shell .mini-card.red { color: #d42c3c; }
+.app-shell .mini-card.joker { color: #d42c3c; font-size: 12px; font-weight: 400; }
+.app-shell .poker-chips i {
+  width: 32px;
+  height: 8px;
+  margin-top: var(--px);
+  border: 0;
+  border-radius: 0;
+  background: #d42c3c;
+  box-shadow: 0 0 0 var(--px) var(--edge), inset 0 var(--px) 0 0 rgba(255, 255, 255, 0.35);
+}
+.app-shell .poker-chips i:nth-child(2) { background: #3f79b8; }
+.app-shell .poker-chips i:nth-child(3) { background: #4a3f63; }
+.app-shell .stratum { box-shadow: none; filter: drop-shadow(0 calc(var(--px) * 2) 0 var(--edge)); }
+.app-shell .stratum-1 { background: #c08040; }
+.app-shell .stratum-2 { background: #9a6a3a; }
+.app-shell .stratum-3 { background: #7a4a24; }
+.app-shell .shaft { border-radius: 0; background: var(--gold); }
+.app-shell .crystal { width: 12px; height: 12px; transform: none; border: 0; box-shadow: 0 0 0 var(--px) var(--edge), inset var(--px) var(--px) 0 0 rgba(255, 255, 255, 0.45); }
+.app-shell .crystal.cyan { background: #3fb0c0; }
+.app-shell .crystal.red { background: #d42c3c; }
+.app-shell .crystal.green { background: #2f9a52; }
+.app-shell .crystal.purple { background: #8a5cc8; }
+.app-shell .crystal.gold { background: var(--gold); }
+
+/* ---------- 留言板 ---------- */
+.app-shell .guestbook { border-top: var(--px) solid #332b44; }
+.app-shell .guestbook-heading h2 { color: var(--text); font-family: inherit; font-size: 24px; font-weight: 400; letter-spacing: 0; }
+.app-shell .guestbook-heading p { color: var(--muted); font-size: 12px; }
+.app-shell .guestbook-count { --rim: #332b44; padding: 4px 10px; color: var(--muted); background: var(--bg); font-size: 12px; }
+.app-shell :is(.guestbook-form, .guestbook-list) { background: var(--panel); }
+.app-shell .guestbook-form { --rim: var(--gold-2); }
+.app-shell .field-label { color: var(--text); font-size: 12px; font-weight: 400; letter-spacing: 0; }
+.app-shell .guestbook-form .field-label span { color: var(--muted); font-size: 12px; }
+/* 表单里的标签原本是行内元素，上边距不生效；像素版里改成块级，两个输入框之间留出间距 */
+.app-shell .guestbook-form .field-label { display: block; }
+.app-shell .guestbook-form .field-label-spaced { margin-top: 16px; }
+.app-shell .text-input { --rim: var(--shade); --shade: #332b44; height: 40px; padding: 0 12px; color: var(--text); background: var(--bg); font-size: 12px; }
+.app-shell .guestbook-textarea { height: auto; padding: 10px 12px; }
+.app-shell .text-input::placeholder { color: #5f5876; }
+.app-shell .text-input:focus {
+  outline: var(--px) solid var(--gold);
+  outline-offset: 0;
+  box-shadow:
+    0 calc(var(--px) * -1) 0 0 var(--edge),
+    0 var(--px) 0 0 var(--edge),
+    calc(var(--px) * -1) 0 0 0 var(--edge),
+    var(--px) 0 0 0 var(--edge),
+    inset var(--px) var(--px) 0 0 var(--rim),
+    inset calc(var(--px) * -1) calc(var(--px) * -1) 0 0 var(--shade);
+}
+.app-shell .guestbook-form-meta { color: var(--muted); font-size: 12px; }
+.app-shell .primary-button { font-size: 12px; letter-spacing: 0.05em; }
+.app-shell .primary-button > span:last-child { font-size: 12px; }
+.app-shell .guestbook-submit { font-size: 12px; }
+.app-shell .spinner { border-radius: 0; border-color: rgba(42, 28, 6, 0.35); border-top-color: #2a1c06; animation-timing-function: steps(8); }
+.app-shell .feedback { font-size: 12px; }
+.app-shell .feedback-error { color: var(--bad); }
+.app-shell .feedback-success { color: var(--ok); }
+.app-shell .guestbook-list { --rim: var(--shade); --shade: #332b44; background: var(--bg); }
+.app-shell .guestbook-entry { border-bottom: var(--px) solid var(--panel-2); }
+.app-shell .guestbook-entry .guestbook-entry-avatar { --rim: #6fb0ff; width: 32px; height: 32px; flex-basis: 32px; color: #fff; background: #1f4f99; font-size: 12px; font-weight: 400; }
+.app-shell .guestbook-entry:nth-child(3n + 2) .guestbook-entry-avatar { --rim: #ff7a86; color: #fff; background: #a3182c; }
+.app-shell .guestbook-entry:nth-child(3n) .guestbook-entry-avatar { --rim: #7fe3a0; color: #fff; background: #1d6e3d; }
+.app-shell .guestbook-entry-meta strong { color: var(--gold); font-size: 12px; font-weight: 400; }
+.app-shell .guestbook-entry-meta time { color: var(--muted); font-size: 12px; }
+.app-shell .guestbook-entry-content p { color: var(--text); font-size: 12px; }
+.app-shell .guestbook-empty { color: var(--muted); }
+.app-shell .guestbook-empty > span { color: var(--gold); font-size: 24px; }
+.app-shell .guestbook-empty strong { color: var(--text); font-size: 12px; font-weight: 400; }
+.app-shell .guestbook-empty p { font-size: 12px; }
+.app-shell .guestbook-admin { --rim: var(--gold-2); background: #241d16; }
+.app-shell .guestbook-admin-row { color: var(--gold); font-size: 12px; }
+.app-shell .guestbook-admin-row .text-input { height: 32px; }
+.app-shell .page-footer { border-top: var(--px) solid #332b44; color: var(--muted); font-size: 12px; letter-spacing: 0.05em; }
+
+@media (prefers-reduced-motion: reduce) {
+  .app-shell .game-card:hover { transform: none; }
+}
+
+/* 原样式在窄屏下会改字号；像素字体要保持 12 的整数倍 */
+@media (max-width: 520px) {
+  .app-shell .hero h1 { font-size: 48px; }
+  .app-shell .topbar-right { gap: 8px; }
+  .app-shell .quiet-button { padding: 4px 8px; }
+}
