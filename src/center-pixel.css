@@ -279,7 +279,7 @@ body { background: repeating-conic-gradient(#13101a 0 25%, #0e0c13 0 50%) 0 0 / 
 .app-shell .account-redeem .field-label { color: var(--text); font-size: 12px; font-weight: 400; letter-spacing: 0; }
 .app-shell .account-redeem-button { padding: 0 14px; font-size: 12px; }
 .app-shell .account-redeem-button:disabled { filter: grayscale(0.6) brightness(0.7); }
-.app-shell .account-logout { color: var(--gold-2); font-size: 12px; }
+.app-shell :is(.account-logout, .account-cancel) { color: var(--gold-2); font-size: 12px; }
 .app-shell .account-admin { --rim: var(--gold-2); background: #241d16; }
 .app-shell .account-admin-row { color: var(--gold); font-size: 12px; }
 .app-shell .account-admin-row .text-input { height: 32px; }

@@ -352,6 +352,7 @@ button:focus-visible, input:focus-visible, a:focus-visible {
 .account-redeem-button:hover:not(:disabled) { background: var(--forest-deep); }
 .account-redeem-button:disabled { opacity: 0.5; cursor: default; }
 .account-logout { margin-top: 14px; border: 0; background: transparent; padding: 0; color: #a08a66; font: inherit; font-size: 11px; cursor: pointer; text-decoration: underline; }
+.account-cancel { display: block; margin-top: 6px; border: 0; background: transparent; padding: 0; color: #a08a66; font: inherit; font-size: 11px; cursor: pointer; text-decoration: underline; }
 .account-admin { margin-top: 20px; border: 1px dashed #dcc9a6; border-radius: 12px; padding: 14px 16px; background: rgba(251, 246, 236, 0.7); }
 .account-admin-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; color: #8a6f45; font-size: 11px; }
 .account-admin-row + .account-admin-row { margin-top: 12px; }

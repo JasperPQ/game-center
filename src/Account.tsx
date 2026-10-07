@@ -302,7 +302,9 @@ function Purchase({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
-  const [checking, setChecking] = useState(Boolean(returningOrderId));
+  // 正在查付款结果的订单号；玩家点「取消」就停止查询，可以重新下单。
+  const [checkingOrderId, setCheckingOrderId] = useState(returningOrderId);
+  const checking = checkingOrderId !== null;
 
   useEffect(() => {
     api.payConfig().then(setConfig).catch(() => setConfig({ enabled: false, label: null }));
@@ -315,18 +317,18 @@ function Purchase({
   }, []);
 
   useEffect(() => {
-    if (!returningOrderId) return;
+    if (!checkingOrderId) return;
     let cancelled = false;
     let attempts = 0;
     let timer: number | undefined;
     const poll = () => {
       attempts += 1;
-      api.order(returningOrderId)
+      api.order(checkingOrderId)
         .then((response) => {
           if (cancelled) return;
           if (response.order.status === "paid") {
             rememberPendingOrder(null);
-            setChecking(false);
+            setCheckingOrderId(null);
             onUserChange(response.user);
             setNotice(`付款成功：已续费 ${response.order.months} 个月，订阅至 ${formatDate(response.user.expiresAt)}。`);
             return;
@@ -334,7 +336,7 @@ function Purchase({
           if (attempts >= ORDER_POLL_LIMIT) {
             // 之后到账由服务端后台对账开通，不必每次打开大厅都再查一轮。
             rememberPendingOrder(null);
-            setChecking(false);
+            setCheckingOrderId(null);
             setNotice(`订单 ${response.order.id} 还没查到付款。已经付过的话，到账后会自动开通，稍后刷新看看；还没付可以重新下单。`);
             return;
           }
@@ -344,7 +346,7 @@ function Purchase({
           if (cancelled) return;
           // 订单不是这个账号的（比如换了号登录），就不再记着它。
           rememberPendingOrder(null);
-          setChecking(false);
+          setCheckingOrderId(null);
           setError(reason instanceof Error ? reason.message : "查询订单失败。");
         });
     };
@@ -353,9 +355,17 @@ function Purchase({
       cancelled = true;
       window.clearTimeout(timer);
     };
-    // 只在带着订单号回来时查一轮。
+    // 每个订单只查一轮；取消时 checkingOrderId 变成 null，上面的清理函数停掉轮询。
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [returningOrderId]);
+  }, [checkingOrderId]);
+
+  /** 没付成功（关掉了付款页、付款失败等）时放弃等待。订单在服务端仍是待付，万一其实付了，后台对账照样会开通。 */
+  function cancelChecking() {
+    rememberPendingOrder(null);
+    setCheckingOrderId(null);
+    setError("");
+    setNotice("已取消等待，可以重新选择时长付款。如果刚才其实付成功了，到账后会自动开通。");
+  }
 
   function pay(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -398,9 +408,16 @@ function Purchase({
               ? <><span className="spinner" /> {checking ? "正在确认付款结果" : "正在下单"}</>
               : `去${config.label ?? "在线"}付款 ${formatYuan(priceFen(months))} 元`}
           </button>
-          <p className="account-hint">
-            会跳到{config.label ?? "付款页"}，用微信或支付宝付款。付完回到这个页面，一般几十秒内自动开通。
-          </p>
+          {checking ? (
+            <p className="account-hint">
+              正在确认订单 {checkingOrderId} 的付款结果，付过款的话一般几十秒内开通。
+              <button className="account-cancel" type="button" onClick={cancelChecking}>没付成功？取消，重新支付</button>
+            </p>
+          ) : (
+            <p className="account-hint">
+              会跳到{config.label ?? "付款页"}，用微信或支付宝付款。付完回到这个页面，一般几十秒内自动开通。
+            </p>
+          )}
         </>
       ) : (
         <p className="account-hint">
