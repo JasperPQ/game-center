@@ -65,10 +65,15 @@ export const api = {
         "/api/admin/extend",
         post("/api/admin/extend", { username, months }, { "X-Admin-Token": token }),
       ),
-    code: (token: string, months: number, count: number) =>
+    code: (token: string, months: number, count: number, lifetime = false) =>
       request<CodesResponse>(
         "/api/admin/code",
-        post("/api/admin/code", { months, count }, { "X-Admin-Token": token }),
+        post("/api/admin/code", { months, count, lifetime }, { "X-Admin-Token": token }),
+      ),
+    lifetime: (token: string, username: string, lifetime: boolean) =>
+      request<{ account: PublicAccount }>(
+        "/api/admin/lifetime",
+        post("/api/admin/lifetime", { username, lifetime }, { "X-Admin-Token": token }),
       ),
     resetPassword: (token: string, username: string, password: string) =>
       request<{ account: PublicAccount }>(

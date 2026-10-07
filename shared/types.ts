@@ -39,6 +39,8 @@ export interface PublicAccount {
   /** 还在注册送的试用期内（从没付过费）。 */
   readonly trial: boolean;
   readonly paid: boolean;
+  /** 永久会员（管理员开的），不看到期时间。 */
+  readonly lifetime: boolean;
   readonly daysLeft: number;
   readonly lastLoginAt: string | null;
 }

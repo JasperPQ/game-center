@@ -25,11 +25,16 @@ export interface AccountRecord {
   lastLoginAt: string | null;
   /** 是否付过费（兑换码、管理员延长、在线支付都算）；没付过的有效期就是注册送的试用。 */
   paid: boolean;
+  /** 永久会员：管理员给自己人开的，不看到期时间。 */
+  lifetime: boolean;
 }
 
 export interface RedeemCodeRecord {
   code: string;
+  /** 加几个月；永久码为 0。 */
   months: number;
+  /** 永久码：兑换后账号变成永久会员。 */
+  lifetime: boolean;
   createdAt: string;
   usedBy: string | null;
   usedAt: string | null;
@@ -79,7 +84,7 @@ function writeJsonAtomic(path: string, value: unknown): void {
   renameSync(temporaryPath, path);
 }
 
-function isAccountRecord(value: unknown): value is Omit<AccountRecord, "paid"> & { paid?: boolean } {
+function isAccountRecord(value: unknown): value is Omit<AccountRecord, "paid" | "lifetime"> & { paid?: boolean; lifetime?: boolean } {
   if (!value || typeof value !== "object") return false;
   const record = value as Record<string, unknown>;
   return typeof record.username === "string"
@@ -90,7 +95,7 @@ function isAccountRecord(value: unknown): value is Omit<AccountRecord, "paid"> &
     && (record.lastLoginAt === null || typeof record.lastLoginAt === "string");
 }
 
-function isRedeemCodeRecord(value: unknown): value is RedeemCodeRecord {
+function isRedeemCodeRecord(value: unknown): value is Omit<RedeemCodeRecord, "lifetime"> & { lifetime?: boolean } {
   if (!value || typeof value !== "object") return false;
   const record = value as Record<string, unknown>;
   return typeof record.code === "string"
@@ -107,7 +112,7 @@ function loadAccounts(): AccountRecord[] {
   }
   return (parsed as { accounts: unknown[] }).accounts
     .filter(isAccountRecord)
-    .map((account) => ({ ...account, paid: account.paid === true }));
+    .map((account) => ({ ...account, paid: account.paid === true, lifetime: account.lifetime === true }));
 }
 
 function loadCodes(): RedeemCodeRecord[] {
@@ -115,7 +120,9 @@ function loadCodes(): RedeemCodeRecord[] {
   if (!parsed || typeof parsed !== "object" || !Array.isArray((parsed as { codes?: unknown }).codes)) {
     return [];
   }
-  return (parsed as { codes: unknown[] }).codes.filter(isRedeemCodeRecord);
+  return (parsed as { codes: unknown[] }).codes
+    .filter(isRedeemCodeRecord)
+    .map((code) => ({ ...code, lifetime: code.lifetime === true }));
 }
 
 function isSessionExpired(session: SessionRecord): boolean {
@@ -204,7 +211,7 @@ function findAccount(username: string): AccountRecord | undefined {
 }
 
 function isSubscribed(account: AccountRecord): boolean {
-  return account.expiresAt !== null && Date.parse(account.expiresAt) > Date.now();
+  return account.lifetime || account.expiresAt !== null && Date.parse(account.expiresAt) > Date.now();
 }
 
 function daysLeft(account: AccountRecord): number {
@@ -219,8 +226,9 @@ function toPublicAccount(account: AccountRecord): PublicAccount {
     createdAt: account.createdAt,
     expiresAt: account.expiresAt,
     subscribed,
-    trial: subscribed && !account.paid,
+    trial: subscribed && !account.paid && !account.lifetime,
     paid: account.paid,
+    lifetime: account.lifetime,
     daysLeft: daysLeft(account),
     lastLoginAt: account.lastLoginAt,
   };
@@ -287,6 +295,7 @@ export function register(usernameValue: unknown, passwordValue: unknown): Accoun
     expiresAt: new Date(now + TRIAL_DAYS * DAY_MS).toISOString(),
     lastLoginAt: null,
     paid: false,
+    lifetime: false,
   };
   accounts = [...accounts, account];
   saveAccounts();
@@ -316,7 +325,8 @@ export function redeem(username: string, codeValue: unknown): AccountMutationRes
   if (!account) return { ok: false, error: "账号不存在。" };
   record.usedBy = username;
   record.usedAt = new Date().toISOString();
-  extendAccount(account, record.months);
+  if (record.lifetime) account.lifetime = true;
+  else extendAccount(account, record.months);
   saveCodes();
   saveAccounts();
   return { ok: true, user: toPublicAccount(account) };
@@ -343,9 +353,23 @@ export function extendSubscription(usernameValue: unknown, monthsValue: unknown)
   return { ok: true, account: toPublicAccount(account) };
 }
 
-export function generateCodes(monthsValue: unknown, countValue: unknown): AdminCodesResult {
-  const months = normalizeMonths(monthsValue);
-  if (!months) return { ok: false, error: `月数需为 1–${MONTHS_MAX} 的整数。` };
+/** 设为或取消永久会员。取消后回到原来的到期时间。 */
+export function setLifetime(usernameValue: unknown, lifetimeValue: unknown): AdminAccountResult {
+  const username = normalizeUsername(usernameValue);
+  if (!username) return { ok: false, error: "用户名不正确。" };
+  if (typeof lifetimeValue !== "boolean") return { ok: false, error: "缺少 lifetime 参数。" };
+  const account = findAccount(username);
+  if (!account) return { ok: false, error: "账号不存在。" };
+  account.lifetime = lifetimeValue;
+  saveAccounts();
+  return { ok: true, account: toPublicAccount(account) };
+}
+
+/** 生成兑换码：lifetime 为 true 时是永久码（忽略月数）。 */
+export function generateCodes(monthsValue: unknown, countValue: unknown, lifetimeValue: unknown = false): AdminCodesResult {
+  const lifetime = lifetimeValue === true;
+  const months = lifetime ? 0 : normalizeMonths(monthsValue);
+  if (months === null) return { ok: false, error: `月数需为 1–${MONTHS_MAX} 的整数。` };
   const count = normalizeCount(countValue);
   if (!count) return { ok: false, error: `数量需为 1–${CODES_MAX} 的整数。` };
   const created: RedeemCodeRecord[] = [];
@@ -359,7 +383,7 @@ export function generateCodes(monthsValue: unknown, countValue: unknown): AdminC
     }
     const code = `${raw.slice(0, 4)}-${raw.slice(4, 8)}-${raw.slice(8, 12)}`;
     result.push(code);
-    created.push({ code, months, createdAt: new Date().toISOString(), usedBy: null, usedAt: null });
+    created.push({ code, months, lifetime, createdAt: new Date().toISOString(), usedBy: null, usedAt: null });
   }
   codes = [...codes, ...created];
   saveCodes();

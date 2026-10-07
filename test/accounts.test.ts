@@ -314,6 +314,44 @@ describe("Game Center accounts and subscription", () => {
     expect(((await settled.json()) as { order: PublicOrder }).order.status).toBe("paid");
   });
 
+  it("gives friends a lifetime pass by admin switch or by a lifetime code", async () => {
+    const { cookie: friendCookie } = await registerUser("Friend", "10.0.0.20");
+    const flagged = await request("/api/admin/lifetime", {
+      method: "POST",
+      body: { username: "Friend", lifetime: true },
+      token: adminToken,
+    });
+    expect(((await flagged.json()) as { account: PublicAccount }).account.lifetime).toBe(true);
+
+    const codesResponse = await request("/api/admin/code", {
+      method: "POST",
+      body: { count: 1, lifetime: true },
+      token: adminToken,
+    });
+    const { codes } = (await codesResponse.json()) as { codes: string[] };
+    const { cookie: buddyCookie } = await registerUser("Buddy", "10.0.0.21");
+    const redeemed = await request("/api/redeem", { method: "POST", body: { code: codes[0] }, cookie: buddyCookie });
+    const buddy = ((await redeemed.json()) as { user: PublicAccount }).user;
+    expect(buddy.lifetime).toBe(true);
+    expect(buddy.trial).toBe(false);
+
+    // 试用期早过了（登录态 30 天内）依然能进游戏。
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(Date.now() + 20 * DAY_MS);
+    expect((await checkAuth(friendCookie)).status).toBe(200);
+    expect((await checkAuth(buddyCookie)).status).toBe(200);
+    vi.useRealTimers();
+
+    const unflagged = await request("/api/admin/lifetime", {
+      method: "POST",
+      body: { username: "Friend", lifetime: false },
+      token: adminToken,
+    });
+    const friend = ((await unflagged.json()) as { account: PublicAccount }).account;
+    expect(friend.lifetime).toBe(false);
+    expect(friend.trial).toBe(true);
+  });
+
   it("limits registrations per IP and repeated wrong passwords", async () => {
     for (let i = 0; i < 5; i++) await registerUser(`Spam${i}`, "10.0.0.66");
     const sixth = await request("/api/register", {

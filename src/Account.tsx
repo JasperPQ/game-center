@@ -193,12 +193,14 @@ function LoginRegister({ onUserChange }: { onUserChange: (user: PublicAccount) =
 }
 
 function statusBadge(user: PublicAccount): string {
+  if (user.lifetime) return "永久会员";
   if (!user.subscribed) return user.paid ? "订阅已到期" : "试用已结束";
   if (user.trial) return `试用中 · 还剩 ${user.daysLeft} 天`;
   return `订阅至 ${formatDate(user.expiresAt)}（还剩 ${user.daysLeft} 天）`;
 }
 
 function statusNote(user: PublicAccount): string {
+  if (user.lifetime) return "永久会员，所有游戏随便玩，不用续费。";
   if (!user.subscribed) return "游戏入口暂时关闭了。在下方续费，或输入兑换码，马上就能继续玩。";
   if (user.trial) return `试用期内所有游戏都能玩。试用结束后 ${PRICE_PER_MONTH_YUAN} 元 / 月，现在续费，剩下的试用天数照样保留。`;
   if (user.daysLeft <= 3) return "订阅快到期了，续费后从原到期日往后顺延。";
@@ -252,31 +254,35 @@ function AccountStatus({
         </span>
       </div>
 
-      <p className={user.subscribed && user.daysLeft > 3 ? "account-status-note" : "account-status-note account-status-note-warn"}>
+      <p className={user.lifetime || user.subscribed && user.daysLeft > 3 ? "account-status-note" : "account-status-note account-status-note-warn"}>
         {statusNote(user)}
       </p>
 
-      <Purchase onUserChange={onUserChange} returningOrderId={returningOrderId} />
+      {!user.lifetime && (
+        <>
+          <Purchase onUserChange={onUserChange} returningOrderId={returningOrderId} />
 
-      <form className="account-redeem" onSubmit={redeem}>
-        <label className="field-label" htmlFor="account-code">有兑换码？</label>
-        <div className="account-redeem-row">
-          <input
-            id="account-code"
-            className="text-input"
-            value={code}
-            onChange={(event) => setCode(event.target.value)}
-            placeholder="例如 8K2M-PQ4X-7YTR"
-            autoComplete="off"
-            required
-          />
-          <button className="account-redeem-button" type="submit" disabled={busy || !code.trim()}>
-            {busy ? <span className="spinner" /> : "开通 / 续费"}
-          </button>
-        </div>
-        {error && <p className="feedback feedback-error" role="alert">{error}</p>}
-        {notice && <p className="feedback feedback-success" role="status">{notice}</p>}
-      </form>
+          <form className="account-redeem" onSubmit={redeem}>
+            <label className="field-label" htmlFor="account-code">有兑换码？</label>
+            <div className="account-redeem-row">
+              <input
+                id="account-code"
+                className="text-input"
+                value={code}
+                onChange={(event) => setCode(event.target.value)}
+                placeholder="例如 8K2M-PQ4X-7YTR"
+                autoComplete="off"
+                required
+              />
+              <button className="account-redeem-button" type="submit" disabled={busy || !code.trim()}>
+                {busy ? <span className="spinner" /> : "开通 / 续费"}
+              </button>
+            </div>
+            {error && <p className="feedback feedback-error" role="alert">{error}</p>}
+            {notice && <p className="feedback feedback-success" role="status">{notice}</p>}
+          </form>
+        </>
+      )}
 
       <button className="account-logout" type="button" onClick={logout}>退出登录</button>
     </div>
@@ -426,6 +432,7 @@ function AccountAdmin() {
   const [orders, setOrders] = useState<PublicOrder[]>([]);
   const [months, setMonths] = useState("1");
   const [count, setCount] = useState("1");
+  const [lifetimeCodes, setLifetimeCodes] = useState(false);
   const [generated, setGenerated] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -472,8 +479,9 @@ function AccountAdmin() {
       });
   }
 
-  const paidActive = accounts.filter((account) => account.subscribed && !account.trial).length;
+  const paidActive = accounts.filter((account) => account.subscribed && !account.trial && !account.lifetime).length;
   const inTrial = accounts.filter((account) => account.trial).length;
+  const lifetimeCount = accounts.filter((account) => account.lifetime).length;
   const monthStart = new Date();
   monthStart.setDate(1);
   monthStart.setHours(0, 0, 0, 0);
@@ -507,6 +515,21 @@ function AccountAdmin() {
       });
   }
 
+  function toggleLifetime(account: PublicAccount) {
+    setBusy(true);
+    setError("");
+    setNotice("");
+    api.admin.lifetime(token, account.username, !account.lifetime)
+      .then(() => {
+        setNotice(account.lifetime ? `${account.username} 已取消永久会员。` : `${account.username} 已设为永久会员。`);
+        loadAccounts(token);
+      })
+      .catch((reason: unknown) => {
+        setBusy(false);
+        setError(reason instanceof Error ? reason.message : "设置失败。");
+      });
+  }
+
   function resetPassword(username: string) {
     const next = window.prompt(`为 ${username} 设置新密码（至少 6 个字符）：`);
     if (next === null) return;
@@ -529,7 +552,7 @@ function AccountAdmin() {
     setBusy(true);
     setError("");
     setNotice("");
-    api.admin.code(token, Number(months), Number(count))
+    api.admin.code(token, Number(months), Number(count), lifetimeCodes)
       .then((response) => {
         setBusy(false);
         setGenerated(response.codes);
@@ -570,24 +593,38 @@ function AccountAdmin() {
     <div className="account-admin">
       <div className="account-admin-row account-admin-top">
         <span>
-          账号管理（{accounts.length} 个账号 · 付费有效 {paidActive} · 试用中 {inTrial} · 本月在线收款 {formatYuan(monthRevenueFen)} 元）
+          账号管理（{accounts.length} 个账号 · 付费有效 {paidActive} · 试用中 {inTrial} · 永久 {lifetimeCount} · 本月在线收款 {formatYuan(monthRevenueFen)} 元）
         </span>
         <button className="account-admin-button" type="button" onClick={() => updateToken("")}>退出管理</button>
       </div>
 
       <form className="account-admin-row account-admin-code" onSubmit={generate}>
         <label htmlFor="admin-months">生成兑换码</label>
-        <input
-          id="admin-months"
-          className="text-input"
-          type="number"
-          min={1}
-          max={120}
-          value={months}
-          onChange={(event) => setMonths(event.target.value)}
-          aria-label="兑换码月数"
-        />
-        <span>个月 ×</span>
+        <select
+          className="text-input account-admin-kind"
+          value={lifetimeCodes ? "lifetime" : "months"}
+          onChange={(event) => setLifetimeCodes(event.target.value === "lifetime")}
+          aria-label="兑换码类型"
+        >
+          <option value="months">按月</option>
+          <option value="lifetime">永久</option>
+        </select>
+        {!lifetimeCodes && (
+          <>
+            <input
+              id="admin-months"
+              className="text-input"
+              type="number"
+              min={1}
+              max={120}
+              value={months}
+              onChange={(event) => setMonths(event.target.value)}
+              aria-label="兑换码月数"
+            />
+            <span>个月</span>
+          </>
+        )}
+        <span>×</span>
         <input
           className="text-input"
           type="number"
@@ -633,11 +670,15 @@ function AccountAdmin() {
                   <td>{formatDate(account.createdAt)}</td>
                   <td>{formatDate(account.expiresAt)}</td>
                   <td>
-                    {account.subscribed ? `${account.trial ? "试用" : "有效"} · ${account.daysLeft} 天` : "已到期"}
+                    {account.lifetime ? "永久"
+                      : account.subscribed ? `${account.trial ? "试用" : "有效"} · ${account.daysLeft} 天` : "已到期"}
                   </td>
                   <td className="account-admin-actions">
                     <button className="account-admin-button" type="button" disabled={busy} onClick={() => extend(account.username)}>
                       ＋1 月
+                    </button>
+                    <button className="account-admin-button" type="button" disabled={busy} onClick={() => toggleLifetime(account)}>
+                      {account.lifetime ? "取消永久" : "设为永久"}
                     </button>
                     <button className="account-admin-button" type="button" disabled={busy} onClick={() => resetPassword(account.username)}>
                       重置密码

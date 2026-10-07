@@ -9,6 +9,7 @@ import {
   redeem,
   register,
   resetPassword,
+  setLifetime,
 } from "./accounts.js";
 import { verifyAdminToken } from "./admin-token.js";
 import { readBody } from "./body.js";
@@ -283,13 +284,25 @@ export async function handleApiRequest(request: IncomingMessage, response: Serve
 
     if (method === "POST" && path === "/api/admin/code") {
       if (!requireAdmin(request, response)) return true;
-      const body = await readBody(request) as { months?: unknown; count?: unknown };
-      const result = generateCodes(body.months, body.count ?? 1);
+      const body = await readBody(request) as { months?: unknown; count?: unknown; lifetime?: unknown };
+      const result = generateCodes(body.months, body.count ?? 1, body.lifetime);
       if (!result.ok) {
         sendJson(response, 400, { error: result.error });
         return true;
       }
       sendJson(response, 200, { codes: result.codes });
+      return true;
+    }
+
+    if (method === "POST" && path === "/api/admin/lifetime") {
+      if (!requireAdmin(request, response)) return true;
+      const body = await readBody(request) as { username?: unknown; lifetime?: unknown };
+      const result = setLifetime(body.username, body.lifetime);
+      if (!result.ok) {
+        sendJson(response, 400, { error: result.error });
+        return true;
+      }
+      sendJson(response, 200, { account: result.account });
       return true;
     }
 
