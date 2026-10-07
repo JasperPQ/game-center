@@ -54,6 +54,11 @@ COVERS = {
         "a vintage steam locomotive pulling colorful train cars across a stylized map of North America, "
         "railway routes in many colors connecting cities, mountains and plains, a ticket card, golden hour light"
     ),
+    "cantstop": (
+        "tiny mountain climbers in red, blue, green and yellow jackets scaling a stepped rocky mountain made of "
+        "stone pillars of different heights, small tents pitched on ledges, colorful flags planted on the snowy "
+        "summits, four big white dice in the foreground, alpine peaks and a pink dawn sky behind"
+    ),
 }
 
 

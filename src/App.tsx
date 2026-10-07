@@ -14,6 +14,7 @@ import pokerCover from "./assets/pixel/covers/poker.png";
 import camelCover from "./assets/pixel/covers/camel.png";
 import azulCover from "./assets/pixel/covers/azul.png";
 import ttrCover from "./assets/pixel/covers/ttr.png";
+import cantstopCover from "./assets/pixel/covers/cantstop.png";
 import "./egg.css";
 import "./style-toggle.css";
 // 像素风皮肤：只在像素版时放进页面，叠在原始的 styles.css 上。
@@ -75,6 +76,14 @@ const GAMES = [
     description: "收集彩色车票，在美国地图上铺铁路、连城市、完成目的地票，铺出最长铁路的人加分最多。",
     url: gameUrl("/ttr/", 5180),
     cover: ttrCover,
+  },
+  {
+    id: "cantstop",
+    name: "欲罢不能",
+    tagline: "2–4 人 · 约 20 分钟",
+    description: "掷 4 颗骰子两两分组往山上爬：再掷一次继续冒险，还是收手扎营保住进度？贪心爆掉就白爬，先登顶 3 条路的人获胜。",
+    url: gameUrl("/cantstop/", 5181),
+    cover: cantstopCover,
   },
 ] as const;
 

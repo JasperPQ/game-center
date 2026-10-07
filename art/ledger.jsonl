@@ -27,3 +27,6 @@
 {"time": "2026-10-07 17:36:34", "name": "ttr-s811", "endpoint": "/create-image-pixflux", "usage": {"type": "usd", "usd": 0.008174565262264675}, "seconds": 142.0}
 {"time": "2026-10-07 18:10:49", "name": "gem-merchant-s821", "endpoint": "/create-image-pixflux", "usage": {"type": "usd", "usd": 0.006923303021325006}, "seconds": 38.1}
 {"time": "2026-10-07 18:11:40", "name": "gem-merchant-s822", "endpoint": "/create-image-pixflux", "usage": {"type": "usd", "usd": 0.007592909230126276}, "seconds": 50.7}
+{"time": "2026-10-07 19:07:55", "name": "cantstop-s811", "endpoint": "/create-image-pixflux", "usage": {"type": "usd", "usd": 0.0071311880482567685}, "seconds": 27.8}
+{"time": "2026-10-07 19:08:45", "name": "cantstop-s812", "endpoint": "/create-image-pixflux", "usage": {"type": "usd", "usd": 0.0065203986697726785}, "seconds": 49.5}
+{"time": "2026-10-07 19:09:46", "name": "cantstop-s813", "endpoint": "/create-image-pixflux", "usage": {"type": "usd", "usd": 0.007473785161972046}, "seconds": 60.6}
