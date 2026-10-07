@@ -7,6 +7,13 @@ import { useBoardStyle } from "./boardStyle";
 import Guestbook from "./Guestbook";
 import { socket } from "./socket";
 import eggUrl from "./assets/pixel/egg.png";
+// 每个游戏卡片的封面（PixelLab 生成，见 art/covers.py）
+import gemCover from "./assets/pixel/covers/gem-merchant.png";
+import guandanCover from "./assets/pixel/covers/guandan.png";
+import pokerCover from "./assets/pixel/covers/poker.png";
+import camelCover from "./assets/pixel/covers/camel.png";
+import azulCover from "./assets/pixel/covers/azul.png";
+import ttrCover from "./assets/pixel/covers/ttr.png";
 import "./egg.css";
 import "./style-toggle.css";
 // 像素风皮肤：只在像素版时放进页面，叠在原始的 styles.css 上。
@@ -27,6 +34,7 @@ const GAMES = [
     tagline: "2–4 人 · 约 30 分钟",
     description: "收集五色宝石、购买土地、吸引贵族来访，率先达到 15 分的商人获胜。",
     url: gameUrl("/gem/", 5173),
+    cover: gemCover,
   },
   {
     id: "guandan",
@@ -34,6 +42,7 @@ const GAMES = [
     tagline: "4 人 · 约 1 小时",
     description: "对家是队友，逢人配、炸弹、同花顺，从 2 一路打到 A，先过 A 的一队获胜。",
     url: gameUrl("/guandan/", 5174),
+    cover: guandanCover,
   },
   {
     id: "poker",
@@ -41,6 +50,7 @@ const GAMES = [
     tagline: "2–6 人 · 约 1 小时",
     description: "无限注淘汰赛：两张底牌、五张公共牌，诈唬与跟注之间，打到最后一人获胜。",
     url: gameUrl("/poker/", 5176),
+    cover: pokerCover,
   },
   {
     id: "camel",
@@ -48,6 +58,7 @@ const GAMES = [
     tagline: "3–8 人 · 约 30 分钟",
     description: "金字塔下的骆驼赛跑：骆驼会叠着背一起跑，疯骆驼逆着捣乱。你不骑骆驼，只押注领先、冠军和垫底，金币最多的人获胜。",
     url: gameUrl("/camel/", 5178),
+    cover: camelCover,
   },
   {
     id: "azul",
@@ -55,6 +66,7 @@ const GAMES = [
     tagline: "2–4 人 · 约 30 分钟",
     description: "从工厂圆盘拿花砖拼墙：按行、按列、按颜色铺满，先拼满一整行触发终局，分数最高者获胜。",
     url: gameUrl("/azul/", 5179),
+    cover: azulCover,
   },
   {
     id: "ttr",
@@ -62,81 +74,9 @@ const GAMES = [
     tagline: "2–5 人 · 约 45 分钟",
     description: "收集彩色车票，在美国地图上铺铁路、连城市、完成目的地票，铺出最长铁路的人加分最多。",
     url: gameUrl("/ttr/", 5180),
+    cover: ttrCover,
   },
 ] as const;
-
-function GemArt() {
-  return (
-    <div className="game-art game-art-gem" aria-hidden="true">
-      <span className="gem gem-white" />
-      <span className="gem gem-blue" />
-      <span className="gem gem-green" />
-      <span className="gem gem-red" />
-      <span className="gem gem-black" />
-    </div>
-  );
-}
-
-function GuandanArt() {
-  return (
-    <div className="game-art game-art-cards" aria-hidden="true">
-      <span className="mini-card"><b>A</b>♠</span>
-      <span className="mini-card red"><b>2</b>♥</span>
-      <span className="mini-card joker"><span>JOKER</span></span>
-    </div>
-  );
-}
-
-function PokerArt() {
-  return (
-    <div className="game-art game-art-cards" aria-hidden="true">
-      <span className="mini-card"><b>A</b>♠</span>
-      <span className="mini-card red"><b>A</b>♥</span>
-      <span className="poker-chips"><i /><i /><i /></span>
-    </div>
-  );
-}
-
-function CamelArt() {
-  // 三只赛驼叠成一座塔（游戏里骆驼就是这样背着跑的），旁边一只绿驼、一只逆行的黑疯骆驼
-  return (
-    <div className="game-art game-art-camel" aria-hidden="true">
-      <span className="camel-sprite camel-green" />
-      <span className="camel-stack">
-        <span className="camel-sprite camel-red" />
-        <span className="camel-sprite camel-blue" />
-        <span className="camel-sprite camel-yellow" />
-      </span>
-      <span className="camel-sprite camel-black flip" />
-    </div>
-  );
-}
-
-function AzulArt() {
-  // 五种花砖排成一排，像一条还没铺满的图案行
-  return (
-    <div className="game-art game-art-azul" aria-hidden="true">
-      <span className="azul-tile azul-blue" />
-      <span className="azul-tile azul-yellow" />
-      <span className="azul-tile azul-red" />
-      <span className="azul-tile azul-black" />
-      <span className="azul-tile azul-white" />
-    </div>
-  );
-}
-
-function TtrArt() {
-  // 一列彩色车厢 + 车头，像地图上正在铺的一条铁路
-  return (
-    <div className="game-art game-art-ttr" aria-hidden="true">
-      <span className="ttr-car ttr-car-loco" />
-      <span className="ttr-car ttr-car-red" />
-      <span className="ttr-car ttr-car-yellow" />
-      <span className="ttr-car ttr-car-blue" />
-      <span className="ttr-car ttr-car-green" />
-    </div>
-  );
-}
 
 // 网关拦下没订阅的访客时会带着 ?gate=login|expired&next=<游戏路径> 回到大厅；付款页回来时带 ?order=<订单号>。
 const landingParams = new URLSearchParams(window.location.search);
@@ -294,12 +234,9 @@ function App() {
             key={game.id}
             onClick={handleGameClick}
           >
-            {game.id === "gem-merchant" ? <GemArt />
-              : game.id === "guandan" ? <GuandanArt />
-              : game.id === "camel" ? <CamelArt />
-              : game.id === "azul" ? <AzulArt />
-              : game.id === "ttr" ? <TtrArt />
-              : <PokerArt />}
+            <div className="game-art game-cover" aria-hidden="true">
+              <img src={game.cover} alt="" />
+            </div>
             <div className="game-card-body">
               <span className="game-card-tagline">{game.tagline}</span>
               <h2>{game.name}</h2>

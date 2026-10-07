@@ -105,19 +105,6 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   text-transform: uppercase;
 }
 .eyebrow-line { width: 26px; height: 1px; background: var(--gold); }
-.gem {
-  display: block;
-  width: 24px;
-  height: 24px;
-  border-radius: 8px 8px 11px 11px;
-  transform: rotate(45deg) scale(0.83);
-  box-shadow: inset -3px -4px 7px rgba(0, 0, 0, 0.14), inset 2px 2px 5px rgba(255, 255, 255, 0.55), 0 4px 10px rgba(30, 45, 37, 0.1);
-}
-.gem-white { background: #dbd8c9; }
-.gem-blue { background: #718ca0; }
-.gem-green { background: #688873; }
-.gem-red { background: #ad7062; }
-.gem-black { background: #39443e; }
 .field-label { margin-bottom: 8px; color: #626c63; font-size: 11px; font-weight: 700; letter-spacing: 0.04em; }
 .field-label-spaced { margin-top: 20px; }
 .text-input {
@@ -208,7 +195,6 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   .topbar { height: 72px; }
   .brand-name span { display: none; }
   .connection-status { font-size: 10px; }
-  .gem { width: 20px; height: 20px; }
   .page-footer { padding-bottom: 17px; }
   .guestbook { padding: 27px 0 29px; }
   .guestbook-heading { align-items: start; }
@@ -230,89 +216,10 @@ button:focus-visible, input:focus-visible, a:focus-visible {
 .game-card h2 { margin: 6px 0 8px; color: #26392f; font-family: "Noto Serif SC", Georgia, serif; font-size: 26px; font-weight: 700; }
 .game-card p { margin: 0 0 18px; color: #747b72; font-size: 13px; line-height: 1.75; }
 .game-card-enter { margin-top: auto; border-radius: 9px; padding: 9px 16px; color: #fff; background: var(--forest); font-size: 12px; font-weight: 700; }
-.game-art { height: 150px; display: flex; align-items: center; justify-content: center; gap: 14px; border-bottom: 6px solid #6f4f37; background: radial-gradient(ellipse at 50% 40%, #2e5d48, #1d3e31 78%); }
-.game-art .gem { width: 30px; height: 30px; }
-.mini-card { width: 54px; height: 76px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; border: 1px solid #cfc9ba; border-radius: 7px; color: #22302a; background: linear-gradient(170deg, #fff, #f4f0e6); box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3); font-size: 18px; }
-.mini-card b { font-size: 22px; }
-.mini-card:nth-child(1) { transform: rotate(-10deg) translateY(6px); }
-.mini-card:nth-child(3) { transform: rotate(10deg) translateY(6px); }
-.mini-card.red { color: #c0392b; }
-.mini-card.joker { color: #c0392b; font-size: 12px; font-weight: 800; line-height: 1; }
-.mini-card.joker span { width: min-content; word-break: break-all; text-align: center; }
-.poker-chips { display: flex; flex-direction: column-reverse; margin-left: 6px; }
-.poker-chips i { width: 34px; height: 9px; margin-top: -2px; border: 2px dashed rgba(255, 255, 255, 0.85); border-radius: 50%; background: #c2563f; box-shadow: 0 2px 3px rgba(0, 0, 0, 0.3); }
-.poker-chips i:nth-child(2) { background: #3f6f9c; }
-.poker-chips i:nth-child(3) { background: #2f2f2f; }
-
-/* 晶脉：三层逐渐变窄的六边形矿层，中间一条电梯井 */
-.strata { position: relative; width: 170px; height: 112px; }
-.stratum {
-  position: absolute;
-  left: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-  transform: translateX(-50%);
-  clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
-}
-.stratum-1 { top: 0; width: 170px; height: 34px; background: #e9e0cb; }
-.stratum-2 { top: 42px; width: 118px; height: 30px; background: #cfc2a5; }
-.stratum-3 { top: 80px; width: 72px; height: 26px; background: #b3a27f; }
-.shaft { position: absolute; left: 50%; top: 8px; width: 4px; height: 96px; margin-left: -2px; border-radius: 2px; background: rgba(214, 170, 74, 0.9); }
-.crystal { width: 13px; height: 13px; transform: rotate(45deg); border: 1px solid rgba(255, 255, 255, 0.7); }
-.crystal.cyan { background: #4f9a9c; }
-.crystal.red { background: #b5594a; }
-.crystal.green { background: #5f9852; }
-.crystal.purple { background: #7d5ea3; }
-.crystal.gold { background: #cfa23d; }
-
-/* 沙丘赛驼：沙色底，像素骆驼按 1 倍显示；中间三只叠成塔 */
-.game-art-camel { gap: 8px; align-items: flex-end; padding-bottom: 12px; background: linear-gradient(#f2b968, #dc8c4c 72%, #b9693a); }
-.camel-sprite { display: block; flex: 0 0 auto; width: 66px; height: 62px; background: center bottom / 100% 100% no-repeat; image-rendering: pixelated; }
-.camel-sprite.flip { transform: scaleX(-1); }
-.camel-stack { position: relative; width: 66px; height: 116px; }
-.camel-stack .camel-sprite { position: absolute; left: 0; }
-.camel-stack .camel-sprite:nth-child(1) { bottom: 0; }
-.camel-stack .camel-sprite:nth-child(2) { bottom: 27px; }
-.camel-stack .camel-sprite:nth-child(3) { bottom: 54px; }
-.camel-red { background-image: url("./assets/pixel/camels/red.png"); }
-.camel-blue { background-image: url("./assets/pixel/camels/blue.png"); }
-.camel-yellow { background-image: url("./assets/pixel/camels/yellow.png"); }
-.camel-green { background-image: url("./assets/pixel/camels/green.png"); }
-.camel-black { height: 66px; background-image: url("./assets/pixel/camels/black.png"); }
-
-/* 花砖物语：五种花砖排成一排，像一条还没铺满的图案行 */
-.game-art-azul { gap: 10px; background: radial-gradient(ellipse at 50% 40%, #3b6fd4, #23407a 78%); }
-.azul-tile { width: 44px; height: 44px; background: center / 100% 100% no-repeat; image-rendering: pixelated; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45); }
-.azul-blue { background-image: url("./assets/pixel/azul/blue.png"); }
-.azul-yellow { background-image: url("./assets/pixel/azul/yellow.png"); }
-.azul-red { background-image: url("./assets/pixel/azul/red.png"); }
-.azul-black { background-image: url("./assets/pixel/azul/black.png"); }
-.azul-white { background-image: url("./assets/pixel/azul/white.png"); }
-
-/* 车票之旅：车头 + 四节彩色车厢，像地图上正在铺的一条铁路 */
-.game-art-ttr { gap: 6px; align-items: center; padding-bottom: 10px; background: radial-gradient(ellipse at 50% 40%, #2f5f8a, #1d3e5f 78%); }
-.ttr-car {
-  position: relative;
-  width: 46px; height: 34px;
-  border-radius: 5px 5px 3px 3px;
-  box-shadow: inset 0 -8px 0 rgba(0, 0, 0, 0.22), inset 0 6px 0 rgba(255, 255, 255, 0.18), 0 2px 5px rgba(0, 0, 0, 0.3);
-}
-.ttr-car::before, .ttr-car::after {
-  content: "";
-  position: absolute; bottom: -6px;
-  width: 9px; height: 9px; border-radius: 50%;
-  background: #1b2a24;
-}
-.ttr-car::before { left: 7px; }
-.ttr-car::after { right: 7px; }
-.ttr-car-loco { width: 34px; height: 38px; background: #2f2f2f; border-radius: 6px 2px 3px 3px; }
-.ttr-car-red { background: #c0392b; }
-.ttr-car-yellow { background: #e7b10a; }
-.ttr-car-blue { background: #2e6fd6; }
-.ttr-car-green { background: #3a8f4b; }
+/* 卡片封面：PixelLab 画的 2:1 插画（art/covers.py），铺满卡片顶部 */
+.game-art { display: block; aspect-ratio: 2 / 1; overflow: hidden; border-bottom: 6px solid #6f4f37; background: #1d3e31; }
+.game-cover img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.game-card:hover .game-cover img { filter: brightness(1.08); }
 
 /* 账号与订阅 */
 .account { border-top: 1px solid rgba(35, 51, 45, 0.09); padding: 35px 5px 30px; }

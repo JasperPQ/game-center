@@ -42,7 +42,7 @@ body { background: repeating-conic-gradient(#13101a 0 25%, #0e0c13 0 50%) 0 0 / 
 /* ---------- 像素边框：四边各一条黑边、角上留空，内侧亮边 + 暗边 ---------- */
 .app-shell :is(
   .game-card, .game-card-enter, .guestbook-form, .guestbook-list, .guestbook-count, .text-input, .primary-button,
-  .quiet-button, .guestbook-delete, .guestbook-entry-avatar, .guestbook-admin, .guestbook-admin-button, .mini-card,
+  .quiet-button, .guestbook-delete, .guestbook-entry-avatar, .guestbook-admin, .guestbook-admin-button,
   .account-panel, .account-tab, .account-redeem-button, .account-admin, .account-admin-button, .account-badge,
   .account-admin-codes, .account-notice, .account-plan
 ) {
@@ -143,53 +143,12 @@ body { background: repeating-conic-gradient(#13101a 0 25%, #0e0c13 0 50%) 0 0 / 
 .app-shell .game-card-enter { padding: 6px 16px; font-size: 12px; }
 .app-shell .game-card:hover .game-card-enter { filter: brightness(1.1); }
 
-/* 卡片上方的小插图：牌桌绿底换成像素棋盘纹，下沿一条木色像素边 */
+/* 卡片封面：下沿一条木色像素边 */
 .app-shell .game-art {
   margin: var(--px);
   border-bottom: calc(var(--px) * 3) solid #6f4f37;
   background: repeating-conic-gradient(#1d3e31 0 25%, #1a3a2d 0 50%) 0 0 / 4px 4px;
 }
-.app-shell .gem { width: 32px; height: 32px; border-radius: 0; transform: none; box-shadow: none; background: center / contain no-repeat; image-rendering: pixelated; }
-.app-shell .game-art .gem { width: 40px; height: 40px; }
-.app-shell .gem-white { background-image: url("./assets/pixel/tokens/white.png"); }
-.app-shell .gem-blue { background-image: url("./assets/pixel/tokens/blue.png"); }
-.app-shell .gem-green { background-image: url("./assets/pixel/tokens/green.png"); }
-.app-shell .gem-red { background-image: url("./assets/pixel/tokens/red.png"); }
-.app-shell .gem-black { background-image: url("./assets/pixel/tokens/black.png"); }
-.app-shell .mini-card { --rim: #ffffff; --shade: #c9c2b0; width: 52px; height: 72px; color: #141218; background: #f1ece0; font-size: 24px; line-height: 1; }
-.app-shell .mini-card b { font-size: 24px; font-weight: 400; }
-.app-shell .mini-card:nth-child(1) { transform: translateY(6px); }
-.app-shell .mini-card:nth-child(3) { transform: translateY(6px); }
-.app-shell .mini-card.red { color: #d42c3c; }
-.app-shell .mini-card.joker { color: #d42c3c; font-size: 12px; font-weight: 400; }
-.app-shell .poker-chips i {
-  width: 32px;
-  height: 8px;
-  margin-top: var(--px);
-  border: 0;
-  border-radius: 0;
-  background: #d42c3c;
-  box-shadow: 0 0 0 var(--px) var(--edge), inset 0 var(--px) 0 0 rgba(255, 255, 255, 0.35);
-}
-.app-shell .poker-chips i:nth-child(2) { background: #3f79b8; }
-.app-shell .poker-chips i:nth-child(3) { background: #4a3f63; }
-.app-shell .game-art.game-art-camel { background: repeating-conic-gradient(#e2a457 0 25%, #d99a4d 0 50%) 0 0 / 4px 4px; }
-.app-shell .game-art.game-art-azul { background: repeating-conic-gradient(#4a5a8a 0 25%, #3a4670 0 50%) 0 0 / 4px 4px; }
-.app-shell .azul-tile { border: 0; box-shadow: 0 0 0 var(--px) var(--edge), inset 0 0 0 var(--px) rgba(255, 255, 255, 0.12); }
-.app-shell .game-art.game-art-ttr { background: repeating-conic-gradient(#2c4a6e 0 25%, #24395a 0 50%) 0 0 / 4px 4px; }
-.app-shell .ttr-car {
-  border-radius: 0;
-  box-shadow: 0 0 0 var(--px) var(--edge), inset 0 0 0 var(--px) rgba(255, 255, 255, 0.16);
-}
-.app-shell .ttr-car::before, .app-shell .ttr-car::after {
-  bottom: -5px; border-radius: 0; background: var(--edge);
-  box-shadow: 0 0 0 var(--px) var(--edge);
-}
-.app-shell .ttr-car-red { background: #d42c3c; }
-.app-shell .ttr-car-yellow { background: #e0a52a; }
-.app-shell .ttr-car-blue { background: #3f79b8; }
-.app-shell .ttr-car-green { background: #4a9a5a; }
-.app-shell .ttr-car-loco { background: #4a4a4a; }
 
 /* ---------- 留言板 ---------- */
 .app-shell .guestbook { border-top: var(--px) solid #332b44; }
