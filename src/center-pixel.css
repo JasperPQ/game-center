@@ -42,7 +42,9 @@ body { background: repeating-conic-gradient(#13101a 0 25%, #0e0c13 0 50%) 0 0 / 
 /* ---------- 像素边框：四边各一条黑边、角上留空，内侧亮边 + 暗边 ---------- */
 .app-shell :is(
   .game-card, .game-card-enter, .guestbook-form, .guestbook-list, .guestbook-count, .text-input, .primary-button,
-  .quiet-button, .guestbook-delete, .guestbook-entry-avatar, .guestbook-admin, .guestbook-admin-button, .mini-card
+  .quiet-button, .guestbook-delete, .guestbook-entry-avatar, .guestbook-admin, .guestbook-admin-button, .mini-card,
+  .account-panel, .account-tab, .account-redeem-button, .account-admin, .account-admin-button, .account-badge,
+  .account-admin-codes, .account-notice, .account-plan
 ) {
   border: 0;
   border-radius: 0;
@@ -56,7 +58,7 @@ body { background: repeating-conic-gradient(#13101a 0 25%, #0e0c13 0 50%) 0 0 / 
 }
 
 /* ---------- 按钮：靛蓝（普通）、金色（主要）、红色（危险）；按下时下沉一格 ---------- */
-.app-shell :is(.quiet-button, .guestbook-admin-button) {
+.app-shell :is(.quiet-button, .guestbook-admin-button, .account-admin-button) {
   --rim: #6b5c8f;
   --shade: #141119;
   padding: 6px 12px;
@@ -65,9 +67,9 @@ body { background: repeating-conic-gradient(#13101a 0 25%, #0e0c13 0 50%) 0 0 / 
   cursor: pointer;
   font-size: 12px;
 }
-.app-shell :is(.primary-button, .game-card-enter) { --rim: #fff2b8; --shade: #7a5410; color: #2a1c06; background: var(--gold); font-weight: 400; }
+.app-shell :is(.primary-button, .game-card-enter, .account-redeem-button) { --rim: #fff2b8; --shade: #7a5410; color: #2a1c06; background: var(--gold); font-weight: 400; }
 .app-shell .guestbook-delete { --rim: #f25c5c; --shade: #3d0a12; padding: 0 6px; color: #ffd8d0; background: #6e1020; font-size: 12px; }
-.app-shell :is(.quiet-button, .guestbook-admin-button, .guestbook-delete):hover:not(:disabled) { filter: brightness(1.15); }
+.app-shell :is(.quiet-button, .guestbook-admin-button, .account-admin-button, .guestbook-delete):hover:not(:disabled) { filter: brightness(1.15); }
 .app-shell .guestbook-delete:hover:not(:disabled) { background: #6e1020; }
 .app-shell .primary-button:hover:not(:disabled) {
   background: var(--gold);
@@ -250,3 +252,42 @@ body { background: repeating-conic-gradient(#13101a 0 25%, #0e0c13 0 50%) 0 0 / 
   .app-shell .topbar-right { gap: 8px; }
   .app-shell .quiet-button { padding: 4px 8px; }
 }
+
+/* ---------- 账号与订阅 ---------- */
+.app-shell .account { border-top: var(--px) solid #332b44; }
+.app-shell .account-heading h2 { color: var(--text); font-family: inherit; font-size: 24px; font-weight: 400; letter-spacing: 0; }
+.app-shell .account-heading p { color: var(--muted); font-size: 12px; }
+.app-shell .account-notice { --rim: #f25c5c; --shade: #3d0a12; color: #ffd8d0; background: #6e1020; font-size: 12px; }
+.app-shell .account-panel { --rim: var(--gold-2); color: var(--text); background: var(--panel); }
+.app-shell .account-tab { color: var(--muted); background: var(--panel-2); font-size: 12px; font-weight: 400; }
+.app-shell .account-tab.active { --rim: #fff2b8; --shade: #7a5410; color: #2a1c06; background: var(--gold); }
+.app-shell .account-form .field-label { color: var(--text); font-size: 12px; font-weight: 400; letter-spacing: 0; }
+.app-shell .account-form .field-label-spaced { margin-top: 16px; }
+.app-shell .account-hint { color: var(--muted); font-size: 12px; }
+.app-shell .account-username { color: var(--text); font-size: 12px; font-weight: 400; }
+.app-shell .account-badge.subscribed { --rim: var(--ok); --shade: #0a2c17; color: #b6f0c4; background: #1d6e3d; font-size: 12px; font-weight: 400; }
+.app-shell .account-badge.expired { --rim: var(--bad); --shade: #3d0a12; color: #ffd8d0; background: #6e1020; font-size: 12px; font-weight: 400; }
+.app-shell .account-status-note { color: var(--muted); font-size: 12px; }
+.app-shell .account-status-note-warn { color: var(--bad); }
+.app-shell .account-purchase { border-top: var(--px) solid var(--panel-2); }
+.app-shell .account-purchase .field-label { color: var(--text); font-size: 12px; font-weight: 400; letter-spacing: 0; }
+.app-shell .account-plan { color: var(--muted); background: var(--panel-2); font-size: 12px; }
+.app-shell .account-plan.active { --rim: #fff2b8; --shade: #7a5410; color: #2a1c06; background: var(--gold); }
+.app-shell .account-plan-months { font-weight: 400; }
+.app-shell .account-plan-price { font-size: 12px; }
+.app-shell .account-redeem { border-top: var(--px) solid var(--panel-2); }
+.app-shell .account-redeem .field-label { color: var(--text); font-size: 12px; font-weight: 400; letter-spacing: 0; }
+.app-shell .account-redeem-button { padding: 0 14px; font-size: 12px; }
+.app-shell .account-redeem-button:disabled { filter: grayscale(0.6) brightness(0.7); }
+.app-shell .account-logout { color: var(--gold-2); font-size: 12px; }
+.app-shell .account-admin { --rim: var(--gold-2); background: #241d16; }
+.app-shell .account-admin-row { color: var(--gold); font-size: 12px; }
+.app-shell .account-admin-row .text-input { height: 32px; }
+.app-shell .account-admin-code .text-input { text-align: center; }
+.app-shell .account-admin-codes { background: var(--bg); }
+.app-shell .account-admin-codes-head { color: var(--gold); font-size: 12px; }
+.app-shell .account-admin-codes li { color: var(--text); background: var(--bg); font-size: 12px; letter-spacing: 0.1em; }
+.app-shell .account-admin-table { color: var(--text); font-size: 12px; }
+.app-shell .account-admin-table th { color: var(--gold); font-size: 12px; font-weight: 400; }
+.app-shell .account-admin-table th, .app-shell .account-admin-table td { border-bottom: var(--px) solid var(--panel-2); }
+.app-shell .account-admin-empty { color: var(--muted); font-size: 12px; }

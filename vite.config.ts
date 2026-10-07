@@ -8,7 +8,8 @@ export default defineConfig({
     strictPort: true,
     proxy: {
       "/socket.io": { target: "http://localhost:3000", ws: true },
-      "/health": "http://localhost:3000"
+      "/health": "http://localhost:3000",
+      "/api": "http://localhost:3000"
     }
   }
 });

@@ -1,0 +1,648 @@
+import { useEffect, useState, type FormEvent } from "react";
+import { formatYuan, PLAN_MONTHS, PRICE_PER_MONTH_YUAN, priceFen, TRIAL_DAYS } from "../shared/pricing";
+import type { PublicAccount, PublicOrder } from "../shared/types";
+import { api, type PayConfigResponse } from "./api";
+
+const ORDER_POLL_MS = 2_000;
+const ORDER_POLL_LIMIT = 60;
+
+const ADMIN_TOKEN_KEY = "game-center-account-admin-token";
+// 在网址后加 ?admin 才显示账号管理入口。
+const adminEntryEnabled = new URLSearchParams(window.location.search).has("admin");
+
+function readStoredAdminToken(): string {
+  try {
+    return sessionStorage.getItem(ADMIN_TOKEN_KEY) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+function storeAdminToken(token: string): void {
+  try {
+    if (token) sessionStorage.setItem(ADMIN_TOKEN_KEY, token);
+    else sessionStorage.removeItem(ADMIN_TOKEN_KEY);
+  } catch {
+    // 存储不可用时仅在本页有效。
+  }
+}
+
+function formatDate(value: string | null): string {
+  if (!value) return "未开通";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "未开通";
+  return new Intl.DateTimeFormat("zh-CN", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
+}
+
+export function Account({
+  user,
+  onUserChange,
+  returningOrderId,
+}: {
+  user: PublicAccount | null;
+  onUserChange: (user: PublicAccount | null) => void;
+  /** 从付款页回来时网址上带的订单号，用来查付款结果。 */
+  returningOrderId: string | null;
+}) {
+  return (
+    <section className="account" id="account" aria-labelledby="account-title">
+      <div className="account-heading">
+        <div>
+          <div className="eyebrow"><span className="eyebrow-line" /> 会员订阅</div>
+          <h2 id="account-title">{user ? "你好，桌友。" : "登录后才能开桌。"}</h2>
+          <p>
+            {user
+              ? `订阅有效期内，所有游戏都能进。${PRICE_PER_MONTH_YUAN} 元 / 月。`
+              : `注册就送 ${TRIAL_DAYS} 天试用，之后 ${PRICE_PER_MONTH_YUAN} 元 / 月，所有游戏都能玩。`}
+          </p>
+        </div>
+      </div>
+
+      {user ? (
+        <AccountStatus user={user} onUserChange={onUserChange} returningOrderId={returningOrderId} />
+      ) : (
+        <LoginRegister onUserChange={onUserChange} />
+      )}
+
+      {adminEntryEnabled && <AccountAdmin />}
+    </section>
+  );
+}
+
+function LoginRegister({ onUserChange }: { onUserChange: (user: PublicAccount) => void }) {
+  const [mode, setMode] = useState<"login" | "register">("login");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+
+  function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setBusy(true);
+    setError("");
+    setNotice("");
+    const action = mode === "login" ? api.login : api.register;
+    action(username.trim(), password)
+      .then((response) => {
+        setBusy(false);
+        setPassword("");
+        onUserChange(response.user);
+        setNotice(mode === "login" ? "已登录。" : "注册成功，已登录。");
+      })
+      .catch((reason: unknown) => {
+        setBusy(false);
+        setError(reason instanceof Error ? reason.message : "请求失败。");
+      });
+  }
+
+  return (
+    <div className="account-panel account-form-panel">
+      <div className="account-tabs" role="tablist" aria-label="登录或注册">
+        <button
+          type="button"
+          className={mode === "login" ? "account-tab active" : "account-tab"}
+          aria-selected={mode === "login"}
+          onClick={() => { setMode("login"); setError(""); setNotice(""); }}
+        >
+          登录
+        </button>
+        <button
+          type="button"
+          className={mode === "register" ? "account-tab active" : "account-tab"}
+          aria-selected={mode === "register"}
+          onClick={() => { setMode("register"); setError(""); setNotice(""); }}
+        >
+          注册
+        </button>
+      </div>
+
+      <form className="account-form" onSubmit={submit}>
+        <label className="field-label" htmlFor="account-username">用户名</label>
+        <input
+          id="account-username"
+          className="text-input"
+          value={username}
+          onChange={(event) => setUsername(event.target.value)}
+          placeholder="2–20 个字符，字母、数字、下划线或横线"
+          maxLength={20}
+          autoComplete="username"
+          required
+        />
+        <label className="field-label field-label-spaced" htmlFor="account-password">密码</label>
+        <input
+          id="account-password"
+          className="text-input"
+          type="password"
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+          placeholder="至少 6 个字符"
+          maxLength={100}
+          autoComplete={mode === "login" ? "current-password" : "new-password"}
+          required
+        />
+        {error && <p className="feedback feedback-error" role="alert">{error}</p>}
+        {notice && <p className="feedback feedback-success" role="status">{notice}</p>}
+        <button
+          className="primary-button account-submit"
+          type="submit"
+          disabled={busy || !username.trim() || !password}
+        >
+          {busy ? <><span className="spinner" /> 请稍候</> : mode === "login" ? "登录" : "注册并登录"}
+        </button>
+        {mode === "register" ? (
+          <p className="account-hint">注册即登录，送 {TRIAL_DAYS} 天试用；之后 {PRICE_PER_MONTH_YUAN} 元 / 月。</p>
+        ) : (
+          <p className="account-hint">忘记密码请在下方留言板留言，管理员帮你重置。</p>
+        )}
+      </form>
+    </div>
+  );
+}
+
+function statusBadge(user: PublicAccount): string {
+  if (!user.subscribed) return user.paid ? "订阅已到期" : "试用已结束";
+  if (user.trial) return `试用中 · 还剩 ${user.daysLeft} 天`;
+  return `订阅至 ${formatDate(user.expiresAt)}（还剩 ${user.daysLeft} 天）`;
+}
+
+function statusNote(user: PublicAccount): string {
+  if (!user.subscribed) return "游戏入口暂时关闭了。在下方续费，或输入兑换码，马上就能继续玩。";
+  if (user.trial) return `试用期内所有游戏都能玩。试用结束后 ${PRICE_PER_MONTH_YUAN} 元 / 月，现在续费，剩下的试用天数照样保留。`;
+  if (user.daysLeft <= 3) return "订阅快到期了，续费后从原到期日往后顺延。";
+  return "订阅有效，可以进入任意游戏开桌了。续费从原到期日往后顺延。";
+}
+
+function AccountStatus({
+  user,
+  onUserChange,
+  returningOrderId,
+}: {
+  user: PublicAccount;
+  onUserChange: (user: PublicAccount | null) => void;
+  returningOrderId: string | null;
+}) {
+  const [code, setCode] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+
+  function redeem(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setBusy(true);
+    setError("");
+    setNotice("");
+    api.redeem(code.trim())
+      .then((response) => {
+        setBusy(false);
+        setCode("");
+        onUserChange(response.user);
+        setNotice("兑换成功，订阅已开通。");
+      })
+      .catch((reason: unknown) => {
+        setBusy(false);
+        setError(reason instanceof Error ? reason.message : "兑换失败。");
+      });
+  }
+
+  function logout() {
+    api.logout()
+      .then(() => onUserChange(null))
+      .catch(() => onUserChange(null));
+  }
+
+  return (
+    <div className="account-panel account-status-panel">
+      <div className="account-status-line">
+        <span className="account-username">{user.username}</span>
+        <span className={user.subscribed ? "account-badge subscribed" : "account-badge expired"}>
+          {statusBadge(user)}
+        </span>
+      </div>
+
+      <p className={user.subscribed && user.daysLeft > 3 ? "account-status-note" : "account-status-note account-status-note-warn"}>
+        {statusNote(user)}
+      </p>
+
+      <Purchase onUserChange={onUserChange} returningOrderId={returningOrderId} />
+
+      <form className="account-redeem" onSubmit={redeem}>
+        <label className="field-label" htmlFor="account-code">有兑换码？</label>
+        <div className="account-redeem-row">
+          <input
+            id="account-code"
+            className="text-input"
+            value={code}
+            onChange={(event) => setCode(event.target.value)}
+            placeholder="例如 8K2M-PQ4X-7YTR"
+            autoComplete="off"
+            required
+          />
+          <button className="account-redeem-button" type="submit" disabled={busy || !code.trim()}>
+            {busy ? <span className="spinner" /> : "开通 / 续费"}
+          </button>
+        </div>
+        {error && <p className="feedback feedback-error" role="alert">{error}</p>}
+        {notice && <p className="feedback feedback-success" role="status">{notice}</p>}
+      </form>
+
+      <button className="account-logout" type="button" onClick={logout}>退出登录</button>
+    </div>
+  );
+}
+
+/** 选时长、下单、跳去付款；付完回来按订单号查结果。 */
+function Purchase({
+  onUserChange,
+  returningOrderId,
+}: {
+  onUserChange: (user: PublicAccount | null) => void;
+  returningOrderId: string | null;
+}) {
+  const [config, setConfig] = useState<PayConfigResponse | null>(null);
+  const [months, setMonths] = useState<number>(PLAN_MONTHS[0]);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [checking, setChecking] = useState(Boolean(returningOrderId));
+
+  useEffect(() => {
+    api.payConfig().then(setConfig).catch(() => setConfig({ enabled: false, label: null }));
+  }, []);
+
+  useEffect(() => {
+    if (!returningOrderId) return;
+    let cancelled = false;
+    let attempts = 0;
+    let timer: number | undefined;
+    const poll = () => {
+      attempts += 1;
+      api.order(returningOrderId)
+        .then((response) => {
+          if (cancelled) return;
+          if (response.order.status === "paid") {
+            setChecking(false);
+            onUserChange(response.user);
+            setNotice(`付款成功：已续费 ${response.order.months} 个月，订阅至 ${formatDate(response.user.expiresAt)}。`);
+            return;
+          }
+          if (attempts >= ORDER_POLL_LIMIT) {
+            setChecking(false);
+            setError(`还没收到订单 ${response.order.id} 的付款结果。如果已经付过款，请稍后刷新页面，或在留言板留下订单号。`);
+            return;
+          }
+          timer = window.setTimeout(poll, ORDER_POLL_MS);
+        })
+        .catch((reason: unknown) => {
+          if (cancelled) return;
+          setChecking(false);
+          setError(reason instanceof Error ? reason.message : "查询订单失败。");
+        });
+    };
+    poll();
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+    // 只在带着订单号回来时查一轮。
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [returningOrderId]);
+
+  function pay(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setBusy(true);
+    setError("");
+    setNotice("");
+    api.createOrder(months)
+      .then((response) => {
+        window.location.href = response.checkout.url;
+      })
+      .catch((reason: unknown) => {
+        setBusy(false);
+        setError(reason instanceof Error ? reason.message : "下单失败。");
+      });
+  }
+
+  return (
+    <form className="account-purchase" onSubmit={pay}>
+      <span className="field-label">续费时长</span>
+      <div className="account-plans" role="radiogroup" aria-label="续费时长">
+        {PLAN_MONTHS.map((plan) => (
+          <button
+            key={plan}
+            type="button"
+            role="radio"
+            aria-checked={months === plan}
+            className={months === plan ? "account-plan active" : "account-plan"}
+            onClick={() => setMonths(plan)}
+          >
+            <span className="account-plan-months">{plan} 个月</span>
+            <span className="account-plan-price">{formatYuan(priceFen(plan))} 元</span>
+          </button>
+        ))}
+      </div>
+      {config?.enabled ? (
+        <button className="primary-button account-pay" type="submit" disabled={busy || checking}>
+          {busy || checking
+            ? <><span className="spinner" /> {checking ? "正在确认付款结果" : "正在下单"}</>
+            : `${config.label ?? "在线"}付款 ${formatYuan(priceFen(months))} 元`}
+        </button>
+      ) : (
+        <p className="account-hint">
+          {config ? "在线付款即将开通，暂时请找管理员购买兑换码。" : "正在读取付款方式…"}
+        </p>
+      )}
+      {error && <p className="feedback feedback-error" role="alert">{error}</p>}
+      {notice && <p className="feedback feedback-success" role="status">{notice}</p>}
+    </form>
+  );
+}
+
+function formatAdminTime(value: string | null): string {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+  return new Intl.DateTimeFormat("zh-CN", {
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
+function AccountAdmin() {
+  const [token, setToken] = useState(() => readStoredAdminToken());
+  const [tokenInput, setTokenInput] = useState("");
+  const [accounts, setAccounts] = useState<PublicAccount[]>([]);
+  const [orders, setOrders] = useState<PublicOrder[]>([]);
+  const [months, setMonths] = useState("1");
+  const [count, setCount] = useState("1");
+  const [generated, setGenerated] = useState<string[]>([]);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+
+  function updateToken(next: string) {
+    setToken(next);
+    storeAdminToken(next);
+    setError("");
+    setNotice("");
+    setGenerated([]);
+  }
+
+  function loadAccounts(nextToken: string) {
+    setBusy(true);
+    setError("");
+    Promise.all([api.admin.accounts(nextToken), api.admin.orders(nextToken)])
+      .then(([accountsResponse, ordersResponse]) => {
+        setBusy(false);
+        setAccounts(accountsResponse.accounts);
+        setOrders(ordersResponse.orders);
+      })
+      .catch((reason: unknown) => {
+        setBusy(false);
+        setError(reason instanceof Error ? reason.message : "读取失败。");
+        setAccounts([]);
+        setOrders([]);
+      });
+  }
+
+  function markPaid(order: PublicOrder) {
+    if (!window.confirm(`确认已收到 ${order.username} 的 ${formatYuan(order.amountFen)} 元（订单 ${order.id}）？确认后给这个账号加 ${order.months} 个月。`)) return;
+    setBusy(true);
+    setError("");
+    setNotice("");
+    api.admin.markPaid(token, order.id)
+      .then(() => {
+        setNotice(`订单 ${order.id} 已补单。`);
+        loadAccounts(token);
+      })
+      .catch((reason: unknown) => {
+        setBusy(false);
+        setError(reason instanceof Error ? reason.message : "补单失败。");
+      });
+  }
+
+  const paidActive = accounts.filter((account) => account.subscribed && !account.trial).length;
+  const inTrial = accounts.filter((account) => account.trial).length;
+  const monthStart = new Date();
+  monthStart.setDate(1);
+  monthStart.setHours(0, 0, 0, 0);
+  const monthRevenueFen = orders
+    .filter((order) => order.status === "paid" && order.paidAt && Date.parse(order.paidAt) >= monthStart.getTime())
+    .reduce((sum, order) => sum + order.amountFen, 0);
+
+  useEffect(() => {
+    if (token) loadAccounts(token);
+    // 只在进入管理时读一次。
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
+
+  function enter(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (tokenInput.trim()) updateToken(tokenInput.trim());
+  }
+
+  function extend(username: string) {
+    setBusy(true);
+    setError("");
+    setNotice("");
+    api.admin.extend(token, username, 1)
+      .then(() => {
+        setNotice(`${username} 已延长 1 个月。`);
+        return loadAccounts(token);
+      })
+      .catch((reason: unknown) => {
+        setBusy(false);
+        setError(reason instanceof Error ? reason.message : "延长失败。");
+      });
+  }
+
+  function resetPassword(username: string) {
+    const next = window.prompt(`为 ${username} 设置新密码（至少 6 个字符）：`);
+    if (next === null) return;
+    setBusy(true);
+    setError("");
+    setNotice("");
+    api.admin.resetPassword(token, username, next)
+      .then(() => {
+        setBusy(false);
+        setNotice(`${username} 的密码已重置。`);
+      })
+      .catch((reason: unknown) => {
+        setBusy(false);
+        setError(reason instanceof Error ? reason.message : "重置失败。");
+      });
+  }
+
+  function generate(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setBusy(true);
+    setError("");
+    setNotice("");
+    api.admin.code(token, Number(months), Number(count))
+      .then((response) => {
+        setBusy(false);
+        setGenerated(response.codes);
+      })
+      .catch((reason: unknown) => {
+        setBusy(false);
+        setError(reason instanceof Error ? reason.message : "生成失败。");
+      });
+  }
+
+  function copyCodes() {
+    const text = generated.join("\n");
+    navigator.clipboard?.writeText(text).catch(() => {});
+    setNotice(`已尝试复制 ${generated.length} 个兑换码。`);
+  }
+
+  if (!token) {
+    return (
+      <div className="account-admin">
+        <form className="account-admin-row" onSubmit={enter}>
+          <span>账号管理：输入管理员口令</span>
+          <input
+            className="text-input"
+            type="password"
+            value={tokenInput}
+            onChange={(event) => setTokenInput(event.target.value)}
+            placeholder="管理员口令"
+            autoComplete="current-password"
+            aria-label="管理员口令"
+          />
+          <button className="account-admin-button" type="submit" disabled={!tokenInput.trim()}>进入管理</button>
+        </form>
+      </div>
+    );
+  }
+
+  return (
+    <div className="account-admin">
+      <div className="account-admin-row account-admin-top">
+        <span>
+          账号管理（{accounts.length} 个账号 · 付费有效 {paidActive} · 试用中 {inTrial} · 本月在线收款 {formatYuan(monthRevenueFen)} 元）
+        </span>
+        <button className="account-admin-button" type="button" onClick={() => updateToken("")}>退出管理</button>
+      </div>
+
+      <form className="account-admin-row account-admin-code" onSubmit={generate}>
+        <label htmlFor="admin-months">生成兑换码</label>
+        <input
+          id="admin-months"
+          className="text-input"
+          type="number"
+          min={1}
+          max={120}
+          value={months}
+          onChange={(event) => setMonths(event.target.value)}
+          aria-label="兑换码月数"
+        />
+        <span>个月 ×</span>
+        <input
+          className="text-input"
+          type="number"
+          min={1}
+          max={100}
+          value={count}
+          onChange={(event) => setCount(event.target.value)}
+          aria-label="兑换码数量"
+        />
+        <span>张</span>
+        <button className="account-admin-button" type="submit" disabled={busy}>生成</button>
+      </form>
+
+      {generated.length > 0 && (
+        <div className="account-admin-codes">
+          <div className="account-admin-codes-head">
+            <span>新生成的兑换码（请立即复制，刷新后不再显示）</span>
+            <button className="account-admin-button" type="button" onClick={copyCodes}>复制全部</button>
+          </div>
+          <ul>{generated.map((code) => <li key={code}>{code}</li>)}</ul>
+        </div>
+      )}
+
+      {error && <p className="feedback feedback-error" role="alert">{error}</p>}
+      {notice && <p className="feedback feedback-success" role="status">{notice}</p>}
+
+      {accounts.length > 0 ? (
+        <div className="account-admin-table-wrap">
+          <table className="account-admin-table">
+            <thead>
+              <tr>
+                <th>用户名</th>
+                <th>注册时间</th>
+                <th>订阅到期</th>
+                <th>状态</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              {accounts.map((account) => (
+                <tr key={account.username}>
+                  <td>{account.username}</td>
+                  <td>{formatDate(account.createdAt)}</td>
+                  <td>{formatDate(account.expiresAt)}</td>
+                  <td>
+                    {account.subscribed ? `${account.trial ? "试用" : "有效"} · ${account.daysLeft} 天` : "已到期"}
+                  </td>
+                  <td className="account-admin-actions">
+                    <button className="account-admin-button" type="button" disabled={busy} onClick={() => extend(account.username)}>
+                      ＋1 月
+                    </button>
+                    <button className="account-admin-button" type="button" disabled={busy} onClick={() => resetPassword(account.username)}>
+                      重置密码
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        !busy && <p className="account-admin-empty">还没有注册账号。</p>
+      )}
+
+      {orders.length > 0 && (
+        <div className="account-admin-table-wrap">
+          <table className="account-admin-table">
+            <thead>
+              <tr>
+                <th>订单号</th>
+                <th>用户名</th>
+                <th>时长</th>
+                <th>金额</th>
+                <th>下单</th>
+                <th>状态</th>
+              </tr>
+            </thead>
+            <tbody>
+              {orders.map((order) => (
+                <tr key={order.id}>
+                  <td>{order.id}</td>
+                  <td>{order.username}</td>
+                  <td>{order.months} 个月</td>
+                  <td>{formatYuan(order.amountFen)} 元</td>
+                  <td>{formatAdminTime(order.createdAt)}</td>
+                  <td>
+                    {order.status === "paid" ? `已付 ${formatAdminTime(order.paidAt)}` : (
+                      <button className="account-admin-button" type="button" disabled={busy} onClick={() => markPaid(order)}>
+                        未付 · 手动补单
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default Account;

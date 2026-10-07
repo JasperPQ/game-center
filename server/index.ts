@@ -1,4 +1,4 @@
-import { createHash, randomUUID, timingSafeEqual } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { createServer } from "node:http";
 import { dirname, resolve } from "node:path";
@@ -11,6 +11,8 @@ import type {
   ServerToClientEvents,
   SubmitGuestbookEntry,
 } from "../shared/types.js";
+import { adminTokenHash, verifyAdminToken } from "./admin-token.js";
+import { handleApiRequest } from "./http.js";
 
 const GUESTBOOK_LIMIT = 200;
 const GUESTBOOK_RATE_LIMIT_MS = 10_000;
@@ -52,19 +54,13 @@ function saveGuestbook(): void {
   renameSync(temporaryPath, guestbookPath);
 }
 
-/** 未配置 ADMIN_TOKEN 时管理功能关闭。 */
-const adminTokenHash = process.env.ADMIN_TOKEN
-  ? createHash("sha256").update(process.env.ADMIN_TOKEN).digest()
-  : null;
-
 function checkAdminToken(socketId: string, token: unknown): string | null {
   if (!adminTokenHash) return "管理功能未启用。";
   const now = Date.now();
   if (now - (adminFailureTimes.get(socketId) ?? 0) < ADMIN_RETRY_DELAY_MS) {
     return "尝试太频繁了，请稍后再试。";
   }
-  const tokenHash = createHash("sha256").update(typeof token === "string" ? token : "").digest();
-  if (!timingSafeEqual(tokenHash, adminTokenHash)) {
+  if (!verifyAdminToken(token)) {
     adminFailureTimes.set(socketId, now);
     return "管理员口令不正确。";
   }
@@ -87,14 +83,16 @@ function normalizeGuestMessage(value: unknown): string | null {
   return message.length >= 2 && message.length <= 280 ? message : null;
 }
 
-export const httpServer = createServer((request, response) => {
+export const httpServer = createServer(async (request, response) => {
   if (request.url === "/health") {
     response.writeHead(200, { "content-type": "application/json" });
     response.end(JSON.stringify({ ok: true, service: "game-center-server" }));
     return;
   }
-  response.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
-  response.end("Not found");
+  if (!(await handleApiRequest(request, response))) {
+    response.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
+    response.end("Not found");
+  }
 });
 
 const configuredWebOrigins = new Set(

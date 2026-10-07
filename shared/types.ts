@@ -28,3 +28,28 @@ export interface ClientToServerEvents {
 export interface ServerToClientEvents {
   "guestbook:updated": (entries: GuestbookEntry[]) => void;
 }
+
+/** 登录后的账号信息（不含密码）。subscribed 与 daysLeft 每次读取时按当前时间现算。 */
+export interface PublicAccount {
+  readonly username: string;
+  readonly createdAt: string;
+  /** 订阅到期时间，null 表示从未开通。 */
+  readonly expiresAt: string | null;
+  readonly subscribed: boolean;
+  /** 还在注册送的试用期内（从没付过费）。 */
+  readonly trial: boolean;
+  readonly paid: boolean;
+  readonly daysLeft: number;
+  readonly lastLoginAt: string | null;
+}
+
+/** 订单（给前端和管理页看的部分）。金额单位是分。 */
+export interface PublicOrder {
+  readonly id: string;
+  readonly username: string;
+  readonly months: number;
+  readonly amountFen: number;
+  readonly status: "pending" | "paid";
+  readonly createdAt: string;
+  readonly paidAt: string | null;
+}

@@ -1,5 +1,8 @@
-import { useEffect, useState, type FormEvent } from "react";
-import type { GuestbookEntry } from "../shared/types";
+import { useEffect, useState, type FormEvent, type MouseEvent } from "react";
+import { PRICE_PER_MONTH_YUAN, TRIAL_DAYS } from "../shared/pricing";
+import type { GuestbookEntry, PublicAccount } from "../shared/types";
+import { Account } from "./Account";
+import { api } from "./api";
 import { useBoardStyle } from "./boardStyle";
 import Guestbook from "./Guestbook";
 import { socket } from "./socket";
@@ -135,6 +138,19 @@ function TtrArt() {
   );
 }
 
+// 网关拦下没订阅的访客时会带着 ?gate=login|expired&next=<游戏路径> 回到大厅；付款页回来时带 ?order=<订单号>。
+const landingParams = new URLSearchParams(window.location.search);
+const landingGate = landingParams.get("gate");
+const landingOrderId = landingParams.get("order");
+const JINGMAI_GAME = { id: "jingmai", name: "晶脉", url: JINGMAI_URL };
+const landingNextGame = [...GAMES, JINGMAI_GAME].find((game) => game.url === `/${landingParams.get("next") ?? ""}/`) ?? null;
+
+function gateNotice(gate: string | null): string {
+  if (gate === "login") return "请先登录，登录后才能进入游戏。";
+  if (gate === "expired") return "订阅已到期，续费后就能继续进入游戏。";
+  return "";
+}
+
 function App() {
   const [connected, setConnected] = useState(socket.connected);
   const [entries, setEntries] = useState<GuestbookEntry[]>([]);
@@ -146,6 +162,34 @@ function App() {
   // 画面风格（默认像素版），顶栏按钮随时切换；和宝石商人共用同一个选择。
   const [boardStyle, toggleBoardStyle] = useBoardStyle();
   const pixel = boardStyle === "pixel";
+  // 登录状态；null 表示未登录，subscribed 决定能否进入游戏。
+  const [user, setUser] = useState<PublicAccount | null>(null);
+  const [accountNotice, setAccountNotice] = useState(() => gateNotice(landingGate));
+
+  useEffect(() => {
+    api.me().then((response) => setUser(response.user)).catch(() => {});
+    // 读完就把参数从地址栏去掉，刷新时不再重复提示。
+    if (landingGate || landingOrderId) {
+      window.history.replaceState(null, "", window.location.pathname);
+    }
+    if (landingGate || landingOrderId) scrollToAccount();
+  }, []);
+
+  function scrollToAccount() {
+    document.getElementById("account")?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+
+  function handleGameClick(event: MouseEvent<HTMLAnchorElement>) {
+    if (user && user.subscribed) return;
+    event.preventDefault();
+    setAccountNotice(gateNotice(user ? "expired" : "login"));
+    scrollToAccount();
+  }
+
+  function handleUserChange(next: PublicAccount | null) {
+    setUser(next);
+    setAccountNotice("");
+  }
 
   useEffect(() => {
     const handleConnect = () => {
@@ -198,6 +242,14 @@ function App() {
         <div className="topbar-right">
           <button
             type="button"
+            className="quiet-button style-toggle account-entry"
+            onClick={scrollToAccount}
+            title={user ? "查看订阅状态" : "登录或注册"}
+          >
+            {user ? user.username : "登录 / 注册"}
+          </button>
+          <button
+            type="button"
             className="quiet-button style-toggle"
             onClick={toggleBoardStyle}
             title={pixel ? "换回原始版本的画面（只影响你自己看到的）" : "换成像素风画面（只影响你自己看到的）"}
@@ -220,12 +272,27 @@ function App() {
             <img src={eggUrl} alt="" width={42} height={58} />
           </a>
         </div>
-        <p>无需注册，选一款游戏，创建房间后把房间码发给朋友就能开始。</p>
+        <p>注册就送 {TRIAL_DAYS} 天试用，之后 {PRICE_PER_MONTH_YUAN} 元 / 月。选一款游戏，创建房间把房间码发给朋友（朋友也要登录）就能开始。</p>
       </section>
+
+      {accountNotice && <p className="account-notice" role="status">{accountNotice}</p>}
+
+      {landingNextGame && user?.subscribed && (
+        <a className="account-continue primary-button" href={landingNextGame.url}>
+          继续进入{landingNextGame.name} <span aria-hidden="true">→</span>
+        </a>
+      )}
+
+      <Account user={user} onUserChange={handleUserChange} returningOrderId={landingOrderId} />
 
       <section className="game-grid" aria-label="选择游戏">
         {GAMES.map((game) => (
-          <a className={`game-card game-card-${game.id}`} href={game.url} key={game.id}>
+          <a
+            className={`game-card game-card-${game.id}`}
+            href={game.url}
+            key={game.id}
+            onClick={handleGameClick}
+          >
             {game.id === "gem-merchant" ? <GemArt />
               : game.id === "guandan" ? <GuandanArt />
               : game.id === "camel" ? <CamelArt />
