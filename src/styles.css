@@ -268,3 +268,18 @@ button:focus-visible, input:focus-visible, a:focus-visible {
 .crystal.purple { background: #7d5ea3; }
 .crystal.gold { background: #cfa23d; }
 
+/* 沙丘赛驼：沙色底，像素骆驼按 1 倍显示；中间三只叠成塔 */
+.game-art-camel { gap: 8px; align-items: flex-end; padding-bottom: 12px; background: linear-gradient(#f2b968, #dc8c4c 72%, #b9693a); }
+.camel-sprite { display: block; flex: 0 0 auto; width: 66px; height: 62px; background: center bottom / 100% 100% no-repeat; image-rendering: pixelated; }
+.camel-sprite.flip { transform: scaleX(-1); }
+.camel-stack { position: relative; width: 66px; height: 116px; }
+.camel-stack .camel-sprite { position: absolute; left: 0; }
+.camel-stack .camel-sprite:nth-child(1) { bottom: 0; }
+.camel-stack .camel-sprite:nth-child(2) { bottom: 27px; }
+.camel-stack .camel-sprite:nth-child(3) { bottom: 54px; }
+.camel-red { background-image: url("./assets/pixel/camels/red.png"); }
+.camel-blue { background-image: url("./assets/pixel/camels/blue.png"); }
+.camel-yellow { background-image: url("./assets/pixel/camels/yellow.png"); }
+.camel-green { background-image: url("./assets/pixel/camels/green.png"); }
+.camel-black { height: 66px; background-image: url("./assets/pixel/camels/black.png"); }
+

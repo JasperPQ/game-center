@@ -41,6 +41,13 @@ const GAMES = [
     description: "所有人同时行动，下到三层矿洞挖宝石、运回营地。挖得越多越值钱，矿洞也塌得越快。",
     url: gameUrl("/jingmai/", 5177),
   },
+  {
+    id: "camel",
+    name: "沙丘赛驼",
+    tagline: "3–8 人 · 约 30 分钟",
+    description: "金字塔下的骆驼赛跑：骆驼会叠着背一起跑，疯骆驼逆着捣乱。你不骑骆驼，只押注领先、冠军和垫底，金币最多的人获胜。",
+    url: gameUrl("/camel/", 5178),
+  },
 ] as const;
 
 function GemArt() {
@@ -84,6 +91,21 @@ function JingmaiArt() {
         <i className="stratum stratum-3"><b className="crystal gold" /></i>
         <i className="shaft" />
       </span>
+    </div>
+  );
+}
+
+function CamelArt() {
+  // 三只赛驼叠成一座塔（游戏里骆驼就是这样背着跑的），旁边一只绿驼、一只逆行的黑疯骆驼
+  return (
+    <div className="game-art game-art-camel" aria-hidden="true">
+      <span className="camel-sprite camel-green" />
+      <span className="camel-stack">
+        <span className="camel-sprite camel-red" />
+        <span className="camel-sprite camel-blue" />
+        <span className="camel-sprite camel-yellow" />
+      </span>
+      <span className="camel-sprite camel-black flip" />
     </div>
   );
 }
@@ -176,6 +198,7 @@ function App() {
             {game.id === "gem-merchant" ? <GemArt />
               : game.id === "guandan" ? <GuandanArt />
               : game.id === "jingmai" ? <JingmaiArt />
+              : game.id === "camel" ? <CamelArt />
               : <PokerArt />}
             <div className="game-card-body">
               <span className="game-card-tagline">{game.tagline}</span>
