@@ -46,6 +46,13 @@ const GAMES = [
     description: "金字塔下的骆驼赛跑：骆驼会叠着背一起跑，疯骆驼逆着捣乱。你不骑骆驼，只押注领先、冠军和垫底，金币最多的人获胜。",
     url: gameUrl("/camel/", 5178),
   },
+  {
+    id: "azul",
+    name: "花砖物语",
+    tagline: "2–4 人 · 约 30 分钟",
+    description: "从工厂圆盘拿花砖拼墙：按行、按列、按颜色铺满，先拼满一整行触发终局，分数最高者获胜。",
+    url: gameUrl("/azul/", 5179),
+  },
 ] as const;
 
 function GemArt() {
@@ -91,6 +98,19 @@ function CamelArt() {
         <span className="camel-sprite camel-yellow" />
       </span>
       <span className="camel-sprite camel-black flip" />
+    </div>
+  );
+}
+
+function AzulArt() {
+  // 五种花砖排成一排，像一条还没铺满的图案行
+  return (
+    <div className="game-art game-art-azul" aria-hidden="true">
+      <span className="azul-tile azul-blue" />
+      <span className="azul-tile azul-yellow" />
+      <span className="azul-tile azul-red" />
+      <span className="azul-tile azul-black" />
+      <span className="azul-tile azul-white" />
     </div>
   );
 }
@@ -189,6 +209,7 @@ function App() {
             {game.id === "gem-merchant" ? <GemArt />
               : game.id === "guandan" ? <GuandanArt />
               : game.id === "camel" ? <CamelArt />
+              : game.id === "azul" ? <AzulArt />
               : <PokerArt />}
             <div className="game-card-body">
               <span className="game-card-tagline">{game.tagline}</span>

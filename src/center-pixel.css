@@ -172,6 +172,8 @@ body { background: repeating-conic-gradient(#13101a 0 25%, #0e0c13 0 50%) 0 0 / 
 .app-shell .poker-chips i:nth-child(2) { background: #3f79b8; }
 .app-shell .poker-chips i:nth-child(3) { background: #4a3f63; }
 .app-shell .game-art.game-art-camel { background: repeating-conic-gradient(#e2a457 0 25%, #d99a4d 0 50%) 0 0 / 4px 4px; }
+.app-shell .game-art.game-art-azul { background: repeating-conic-gradient(#4a5a8a 0 25%, #3a4670 0 50%) 0 0 / 4px 4px; }
+.app-shell .azul-tile { border: 0; box-shadow: 0 0 0 var(--px) var(--edge), inset 0 0 0 var(--px) rgba(255, 255, 255, 0.12); }
 
 /* ---------- 留言板 ---------- */
 .app-shell .guestbook { border-top: var(--px) solid #332b44; }

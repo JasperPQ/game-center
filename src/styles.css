@@ -283,3 +283,12 @@ button:focus-visible, input:focus-visible, a:focus-visible {
 .camel-green { background-image: url("./assets/pixel/camels/green.png"); }
 .camel-black { height: 66px; background-image: url("./assets/pixel/camels/black.png"); }
 
+/* 花砖物语：五种花砖排成一排，像一条还没铺满的图案行 */
+.game-art-azul { gap: 10px; background: radial-gradient(ellipse at 50% 40%, #3b6fd4, #23407a 78%); }
+.azul-tile { width: 44px; height: 44px; background: center / 100% 100% no-repeat; image-rendering: pixelated; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45); }
+.azul-blue { background-image: url("./assets/pixel/azul/blue.png"); }
+.azul-yellow { background-image: url("./assets/pixel/azul/yellow.png"); }
+.azul-red { background-image: url("./assets/pixel/azul/red.png"); }
+.azul-black { background-image: url("./assets/pixel/azul/black.png"); }
+.azul-white { background-image: url("./assets/pixel/azul/white.png"); }
+
