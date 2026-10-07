@@ -1,0 +1,4 @@
+{
+  "_说明": "首页晶脉入口用哪颗彩蛋（art/out/ 下的路径）。2026-10-07 他在画廊里选了晶洞蛋 geode-c2（也是我推荐的）。改完运行 python export.py。",
+  "egg": "egg/geode-c2.png"
+}

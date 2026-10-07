@@ -3,6 +3,8 @@ import type { GuestbookEntry } from "../shared/types";
 import { useBoardStyle } from "./boardStyle";
 import Guestbook from "./Guestbook";
 import { socket } from "./socket";
+import eggUrl from "./assets/pixel/egg.png";
+import "./egg.css";
 import "./style-toggle.css";
 // 像素风皮肤：只在像素版时放进页面，叠在原始的 styles.css 上。
 import centerPixelCss from "./center-pixel.css?inline";
@@ -11,6 +13,9 @@ import centerPixelCss from "./center-pixel.css?inline";
 function gameUrl(path: string, devPort: number): string {
   return import.meta.env.DEV ? `${window.location.protocol}//${window.location.hostname}:${devPort}/` : path;
 }
+
+/** 晶脉不放卡片，只从标题旁的彩蛋进入。 */
+const JINGMAI_URL = gameUrl("/jingmai/", 5177);
 
 const GAMES = [
   {
@@ -33,13 +38,6 @@ const GAMES = [
     tagline: "2–6 人 · 约 1 小时",
     description: "无限注淘汰赛：两张底牌、五张公共牌，诈唬与跟注之间，打到最后一人获胜。",
     url: gameUrl("/poker/", 5176),
-  },
-  {
-    id: "jingmai",
-    name: "晶脉",
-    tagline: "2–4 人 · 测试版",
-    description: "所有人同时行动，下到三层矿洞挖宝石、运回营地。挖得越多越值钱，矿洞也塌得越快。",
-    url: gameUrl("/jingmai/", 5177),
   },
   {
     id: "camel",
@@ -78,19 +76,6 @@ function PokerArt() {
       <span className="mini-card"><b>A</b>♠</span>
       <span className="mini-card red"><b>A</b>♥</span>
       <span className="poker-chips"><i /><i /><i /></span>
-    </div>
-  );
-}
-
-function JingmaiArt() {
-  return (
-    <div className="game-art game-art-jingmai" aria-hidden="true">
-      <span className="strata">
-        <i className="stratum stratum-1"><b className="crystal cyan" /><b className="crystal red" /></i>
-        <i className="stratum stratum-2"><b className="crystal green" /><b className="crystal purple" /></i>
-        <i className="stratum stratum-3"><b className="crystal gold" /></i>
-        <i className="shaft" />
-      </span>
     </div>
   );
 }
@@ -188,7 +173,13 @@ function App() {
 
       <section className="hero">
         <div className="eyebrow"><span className="eyebrow-line" /> 和朋友在线开一局</div>
-        <h1>Game Center</h1>
+        <div className="hero-title">
+          <h1>Game Center</h1>
+          {/* 晶脉的入口：标题右边一颗不写说明的彩蛋，点进去就是晶脉的房间页 */}
+          <a className="hero-egg" href={JINGMAI_URL} aria-label="晶脉">
+            <img src={eggUrl} alt="" width={42} height={58} />
+          </a>
+        </div>
         <p>无需注册，选一款游戏，创建房间后把房间码发给朋友就能开始。</p>
       </section>
 
@@ -197,7 +188,6 @@ function App() {
           <a className={`game-card game-card-${game.id}`} href={game.url} key={game.id}>
             {game.id === "gem-merchant" ? <GemArt />
               : game.id === "guandan" ? <GuandanArt />
-              : game.id === "jingmai" ? <JingmaiArt />
               : game.id === "camel" ? <CamelArt />
               : <PokerArt />}
             <div className="game-card-body">

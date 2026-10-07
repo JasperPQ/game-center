@@ -6,3 +6,7 @@ coverage/
 *.tsbuildinfo
 *.tmp
 data/guestbook.json
+
+# PixelLab 生成的原图和中间文件
+art/out/
+__pycache__/

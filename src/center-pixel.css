@@ -171,18 +171,7 @@ body { background: repeating-conic-gradient(#13101a 0 25%, #0e0c13 0 50%) 0 0 / 
 }
 .app-shell .poker-chips i:nth-child(2) { background: #3f79b8; }
 .app-shell .poker-chips i:nth-child(3) { background: #4a3f63; }
-.app-shell .stratum { box-shadow: none; filter: drop-shadow(0 calc(var(--px) * 2) 0 var(--edge)); }
-.app-shell .stratum-1 { background: #c08040; }
-.app-shell .stratum-2 { background: #9a6a3a; }
-.app-shell .stratum-3 { background: #7a4a24; }
-.app-shell .shaft { border-radius: 0; background: var(--gold); }
-.app-shell .crystal { width: 12px; height: 12px; transform: none; border: 0; box-shadow: 0 0 0 var(--px) var(--edge), inset var(--px) var(--px) 0 0 rgba(255, 255, 255, 0.45); }
-.app-shell .crystal.cyan { background: #3fb0c0; }
 .app-shell .game-art.game-art-camel { background: repeating-conic-gradient(#e2a457 0 25%, #d99a4d 0 50%) 0 0 / 4px 4px; }
-.app-shell .crystal.red { background: #d42c3c; }
-.app-shell .crystal.green { background: #2f9a52; }
-.app-shell .crystal.purple { background: #8a5cc8; }
-.app-shell .crystal.gold { background: var(--gold); }
 
 /* ---------- 留言板 ---------- */
 .app-shell .guestbook { border-top: var(--px) solid #332b44; }

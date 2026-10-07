@@ -1,0 +1,36 @@
+/*
+ * 晶脉的彩蛋入口：首页标题右边的空白处只放一颗像素彩蛋，不写说明，点进去是晶脉的房间页。
+ * 原版和像素版都显示（不然切回原版就进不去晶脉）。图是 42×58 的像素画，
+ * 按整数倍显示才清晰：电脑上 2 倍，手机上 1 倍。
+ */
+.hero-title { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.hero-egg {
+  flex: none;
+  display: block;
+  /* 蛋比标题高，上下用负边距抵掉，标题区的高度和原来一样 */
+  margin: -18px 0;
+  padding: 4px;
+  line-height: 0;
+}
+.hero-egg img { display: block; width: 84px; height: 116px; image-rendering: pixelated; }
+/* 指上去时像要孵出来一样左右晃 */
+.hero-egg:hover img,
+.hero-egg:focus-visible img { animation: hero-egg-shake 0.4s steps(1, end) infinite; }
+@keyframes hero-egg-shake {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-2px); }
+  50% { transform: translateX(0); }
+  75% { transform: translateX(2px); }
+}
+@media (max-width: 520px) {
+  /*
+   * 手机上标题已经占满一行（原版的衬线字有 300px 宽），蛋再并排会把标题挤成两行。
+   * 改成蹲在标题右上方的空白里，不占标题那一行的宽度。
+   */
+  .hero-title { position: relative; }
+  .hero-egg { position: absolute; right: 0; bottom: 100%; margin: 0 0 -12px; padding: 0; }
+  .hero-egg img { width: 42px; height: 58px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-egg img { animation: none !important; }
+}

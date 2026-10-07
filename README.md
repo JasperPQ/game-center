@@ -1,6 +1,6 @@
 # Game Center · 游戏中心
 
-站点首页：选择游戏（宝石商人、掼蛋）的入口，以及所有游戏共用的游客留言墙。
+站点首页：各游戏的入口，以及所有游戏共用的游客留言墙。
 
 ## 本地运行
 
@@ -20,6 +20,14 @@ ADMIN_TOKEN=test npm run dev
 - `/` → 游戏中心
 - `/gem/` → 宝石商人（构建时 `BASE_PATH=/gem/ npm run build`）
 - `/guandan/` → 掼蛋（构建时 `BASE_PATH=/guandan/ npm run build`）
+
+## 晶脉的入口（彩蛋）
+
+晶脉不放游戏卡片。首页标题「Game Center」右边的空白处只有一颗像素彩蛋（晶洞蛋），不写任何说明；鼠标指上去会左右晃，点进去就是 `/jingmai/` 的房间页。原版和像素版都显示；手机上标题占满一行，蛋改成蹲在标题右上方。样式在 `src/egg.css`，图在 `src/assets/pixel/egg.png`（42×58，电脑上 2 倍、手机上 1 倍显示，整数倍才清晰）。
+
+## 美术（`art/`）
+
+PixelLab 出图，密钥只在 `~/.config/pixellab/api_key`，不进仓库；每次调用记进 `art/ledger.jsonl`，`pixellab.py` 里有预算上限。`egg.py` 出彩蛋候选，`gallery.py` 生成挑选页（`python -m http.server 8770 --directory art/out`），`selection.json` 记选了哪张，`export.py` 裁好放进 `src/assets/pixel/egg.png`。原图和中间文件在被 gitignore 的 `art/out/`。
 
 ## 服务器上的启动方式
 
