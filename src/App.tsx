@@ -53,6 +53,13 @@ const GAMES = [
     description: "从工厂圆盘拿花砖拼墙：按行、按列、按颜色铺满，先拼满一整行触发终局，分数最高者获胜。",
     url: gameUrl("/azul/", 5179),
   },
+  {
+    id: "ttr",
+    name: "车票之旅",
+    tagline: "2–5 人 · 约 45 分钟",
+    description: "收集彩色车票，在美国地图上铺铁路、连城市、完成目的地票，铺出最长铁路的人加分最多。",
+    url: gameUrl("/ttr/", 5180),
+  },
 ] as const;
 
 function GemArt() {
@@ -111,6 +118,19 @@ function AzulArt() {
       <span className="azul-tile azul-red" />
       <span className="azul-tile azul-black" />
       <span className="azul-tile azul-white" />
+    </div>
+  );
+}
+
+function TtrArt() {
+  // 一列彩色车厢 + 车头，像地图上正在铺的一条铁路
+  return (
+    <div className="game-art game-art-ttr" aria-hidden="true">
+      <span className="ttr-car ttr-car-loco" />
+      <span className="ttr-car ttr-car-red" />
+      <span className="ttr-car ttr-car-yellow" />
+      <span className="ttr-car ttr-car-blue" />
+      <span className="ttr-car ttr-car-green" />
     </div>
   );
 }
@@ -210,6 +230,7 @@ function App() {
               : game.id === "guandan" ? <GuandanArt />
               : game.id === "camel" ? <CamelArt />
               : game.id === "azul" ? <AzulArt />
+              : game.id === "ttr" ? <TtrArt />
               : <PokerArt />}
             <div className="game-card-body">
               <span className="game-card-tagline">{game.tagline}</span>

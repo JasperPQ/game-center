@@ -292,3 +292,24 @@ button:focus-visible, input:focus-visible, a:focus-visible {
 .azul-black { background-image: url("./assets/pixel/azul/black.png"); }
 .azul-white { background-image: url("./assets/pixel/azul/white.png"); }
 
+/* 车票之旅：车头 + 四节彩色车厢，像地图上正在铺的一条铁路 */
+.game-art-ttr { gap: 6px; align-items: center; padding-bottom: 10px; background: radial-gradient(ellipse at 50% 40%, #2f5f8a, #1d3e5f 78%); }
+.ttr-car {
+  position: relative;
+  width: 46px; height: 34px;
+  border-radius: 5px 5px 3px 3px;
+  box-shadow: inset 0 -8px 0 rgba(0, 0, 0, 0.22), inset 0 6px 0 rgba(255, 255, 255, 0.18), 0 2px 5px rgba(0, 0, 0, 0.3);
+}
+.ttr-car::before, .ttr-car::after {
+  content: "";
+  position: absolute; bottom: -6px;
+  width: 9px; height: 9px; border-radius: 50%;
+  background: #1b2a24;
+}
+.ttr-car::before { left: 7px; }
+.ttr-car::after { right: 7px; }
+.ttr-car-loco { width: 34px; height: 38px; background: #2f2f2f; border-radius: 6px 2px 3px 3px; }
+.ttr-car-red { background: #c0392b; }
+.ttr-car-yellow { background: #e7b10a; }
+.ttr-car-blue { background: #2e6fd6; }
+.ttr-car-green { background: #3a8f4b; }
