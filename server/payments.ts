@@ -1,14 +1,16 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { formatYuan } from "../shared/pricing.js";
+import { createAfdianProvider } from "./afdian.js";
 import { fulfilOrder, findOrder, type OrderRecord } from "./orders.js";
 
 /** 下单后把玩家送去哪里付款。 */
 export type Checkout = { kind: "redirect"; url: string };
 
 /**
- * 一个收款渠道。新接渠道时实现这个接口，并在 providers 里登记：
+ * 一个收款渠道。新接渠道时实现这个接口，并在 activeProvider 里登记：
  * - createCheckout：拿订单去渠道下单，返回付款页地址；
- * - handleRequest：渠道自己的回调路由（/api/pay/<id>/...），验签或回查确认到账后调用 fulfilOrder。
+ * - handleRequest：渠道自己的回调路由（/api/pay/<id>/...），验签或回查确认到账后调用 fulfilOrder；
+ * - sync（可选）：主动去渠道查最近的订单补账，玩家等结果时和后台定时都会调用。
  */
 export interface PaymentProvider {
   readonly id: string;
@@ -16,6 +18,7 @@ export interface PaymentProvider {
   readonly label: string;
   createCheckout(order: OrderRecord): Promise<Checkout>;
   handleRequest(subpath: string, request: IncomingMessage, response: ServerResponse): Promise<boolean>;
+  sync?(): Promise<void>;
 }
 
 function escapeHtml(value: string): string {
@@ -61,12 +64,20 @@ const mockProvider: PaymentProvider = {
   },
 };
 
-const providers: Record<string, PaymentProvider> = {
-  [mockProvider.id]: mockProvider,
-};
+const SYNC_INTERVAL_MS = 60_000;
 
-/** 当前启用的渠道（环境变量 PAY_PROVIDER）；没配置时在线支付关闭，只能用兑换码。 */
+/** 当前启用的渠道（环境变量 PAY_PROVIDER）；没配置或配置不全时在线支付关闭，只能用兑换码。 */
 export function activeProvider(): PaymentProvider | null {
-  const id = process.env.PAY_PROVIDER;
-  return id ? providers[id] ?? null : null;
+  switch (process.env.PAY_PROVIDER) {
+    case "mock": return mockProvider;
+    case "afdian": return createAfdianProvider();
+    default: return null;
+  }
+}
+
+/** 后台每分钟让渠道补一次账（玩家付完直接关掉页面也能开通）。 */
+export function startPaymentSync(): void {
+  setInterval(() => {
+    void activeProvider()?.sync?.();
+  }, SYNC_INTERVAL_MS).unref();
 }

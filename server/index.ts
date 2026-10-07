@@ -13,6 +13,7 @@ import type {
 } from "../shared/types.js";
 import { adminTokenHash, verifyAdminToken } from "./admin-token.js";
 import { handleApiRequest } from "./http.js";
+import { startPaymentSync } from "./payments.js";
 
 const GUESTBOOK_LIMIT = 200;
 const GUESTBOOK_RATE_LIMIT_MS = 10_000;
@@ -212,6 +213,7 @@ io.on("connection", (socket) => {
 
 if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.meta.url) {
   const port = Number(process.env.PORT ?? 3000);
+  startPaymentSync();
   httpServer.listen(port, () => {
     console.log(`Game Center server listening on http://localhost:${port}`);
   });

@@ -3,8 +3,36 @@ import { formatYuan, PLAN_MONTHS, PRICE_PER_MONTH_YUAN, priceFen, TRIAL_DAYS } f
 import type { PublicAccount, PublicOrder } from "../shared/types";
 import { api, type PayConfigResponse } from "./api";
 
-const ORDER_POLL_MS = 2_000;
-const ORDER_POLL_LIMIT = 60;
+const ORDER_POLL_MS = 3_000;
+const ORDER_POLL_LIMIT = 40;
+const PENDING_ORDER_KEY = "game-center-pending-order";
+const PENDING_ORDER_TTL_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * 跳去付款前记下订单号：爱发电付完不会跳回来，玩家自己回到大厅时靠它接着查结果。
+ * 读写失败（隐私模式等）就只能靠网址上的 ?order=。
+ */
+function rememberPendingOrder(id: string | null): void {
+  try {
+    if (id) localStorage.setItem(PENDING_ORDER_KEY, JSON.stringify({ id, at: Date.now() }));
+    else localStorage.removeItem(PENDING_ORDER_KEY);
+  } catch {
+    // 存储不可用时忽略。
+  }
+}
+
+export function readPendingOrder(): string | null {
+  try {
+    const stored = JSON.parse(localStorage.getItem(PENDING_ORDER_KEY) ?? "null") as { id?: unknown; at?: unknown } | null;
+    if (stored && typeof stored.id === "string" && typeof stored.at === "number"
+      && Date.now() - stored.at < PENDING_ORDER_TTL_MS) {
+      return stored.id;
+    }
+  } catch {
+    // 存储不可用或内容损坏时当作没有。
+  }
+  return null;
+}
 
 const ADMIN_TOKEN_KEY = "game-center-account-admin-token";
 // 在网址后加 ?admin 才显示账号管理入口。
@@ -272,6 +300,12 @@ function Purchase({
 
   useEffect(() => {
     api.payConfig().then(setConfig).catch(() => setConfig({ enabled: false, label: null }));
+    // 从付款页按「返回」回来时浏览器可能直接恢复旧页面（按钮还停在「正在下单」），重新加载一次去查结果。
+    const handlePageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) window.location.reload();
+    };
+    window.addEventListener("pageshow", handlePageShow);
+    return () => window.removeEventListener("pageshow", handlePageShow);
   }, []);
 
   useEffect(() => {
@@ -285,20 +319,25 @@ function Purchase({
         .then((response) => {
           if (cancelled) return;
           if (response.order.status === "paid") {
+            rememberPendingOrder(null);
             setChecking(false);
             onUserChange(response.user);
             setNotice(`付款成功：已续费 ${response.order.months} 个月，订阅至 ${formatDate(response.user.expiresAt)}。`);
             return;
           }
           if (attempts >= ORDER_POLL_LIMIT) {
+            // 之后到账由服务端后台对账开通，不必每次打开大厅都再查一轮。
+            rememberPendingOrder(null);
             setChecking(false);
-            setError(`还没收到订单 ${response.order.id} 的付款结果。如果已经付过款，请稍后刷新页面，或在留言板留下订单号。`);
+            setNotice(`订单 ${response.order.id} 还没查到付款。已经付过的话，到账后会自动开通，稍后刷新看看；还没付可以重新下单。`);
             return;
           }
           timer = window.setTimeout(poll, ORDER_POLL_MS);
         })
         .catch((reason: unknown) => {
           if (cancelled) return;
+          // 订单不是这个账号的（比如换了号登录），就不再记着它。
+          rememberPendingOrder(null);
           setChecking(false);
           setError(reason instanceof Error ? reason.message : "查询订单失败。");
         });
@@ -319,6 +358,7 @@ function Purchase({
     setNotice("");
     api.createOrder(months)
       .then((response) => {
+        rememberPendingOrder(response.order.id);
         window.location.href = response.checkout.url;
       })
       .catch((reason: unknown) => {
@@ -346,11 +386,16 @@ function Purchase({
         ))}
       </div>
       {config?.enabled ? (
-        <button className="primary-button account-pay" type="submit" disabled={busy || checking}>
-          {busy || checking
-            ? <><span className="spinner" /> {checking ? "正在确认付款结果" : "正在下单"}</>
-            : `${config.label ?? "在线"}付款 ${formatYuan(priceFen(months))} 元`}
-        </button>
+        <>
+          <button className="primary-button account-pay" type="submit" disabled={busy || checking}>
+            {busy || checking
+              ? <><span className="spinner" /> {checking ? "正在确认付款结果" : "正在下单"}</>
+              : `去${config.label ?? "在线"}付款 ${formatYuan(priceFen(months))} 元`}
+          </button>
+          <p className="account-hint">
+            会跳到{config.label ?? "付款页"}，用微信或支付宝付款。付完回到这个页面，一般几十秒内自动开通。
+          </p>
+        </>
       ) : (
         <p className="account-hint">
           {config ? "在线付款即将开通，暂时请找管理员购买兑换码。" : "正在读取付款方式…"}

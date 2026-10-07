@@ -26,6 +26,16 @@ ADMIN_TOKEN=test npm run dev
 - **在线支付**：`server/payments.ts` 里的 `PaymentProvider` 接口，环境变量 `PAY_PROVIDER` 选渠道；不设就关闭在线支付，只能用兑换码。下单 → 跳转渠道付款页 → 渠道回调里确认到账后调用 `fulfilOrder`（同一订单重复通知只记一次，实付少于订单金额拒绝）→ 回到 `/?order=<订单号>`，页面轮询结果。`PAY_PROVIDER=mock` 是本地测试用的模拟渠道，线上不要开。
 - **管理页**：访问 `/?admin` 并输入 `ADMIN_TOKEN`：账号列表（试用 / 有效 / 到期）、付费人数和本月在线收款、延长订阅、重置密码、生成兑换码、订单列表（回调没到时可手动补单）。
 
+### 爱发电
+
+线上用爱发电收款（`PAY_PROVIDER=afdian`，代码在 `server/afdian.ts`）。需要的环境变量：`AFDIAN_USER_ID`、`AFDIAN_TOKEN`（开发者页面的 API Token，密钥）、`AFDIAN_PLAN_ID`（5 元 / 月的那个方案），可选 `AFDIAN_BASE`（默认 `https://afdian.com`）。三个没配全时在线支付自动关闭。
+
+- 下单跳到 `https://afdian.com/order/create?plan_id=…&product_type=0&month=<月数>&custom_order_id=<订单号>`，爱发电按「5 元 × 月数」收钱。
+- 爱发电的 Webhook 没有签名，所以收到通知只取 `out_trade_no`，再用开放 API（md5 签名）回查，以 API 结果为准：交易成功、是我们的方案、`custom_order_id` 对得上、实付不少于订单金额，才记账。
+- Webhook 地址填 `https://gulugagame.com/api/pay/afdian/webhook`（保存时爱发电会发测试通知，接口要先上线）。不填也能用：玩家回到大厅查结果时、以及服务端每分钟，都会翻一遍最近 50 笔爱发电订单补账。
+- 爱发电不会跳回来，跳走前浏览器记下订单号（localStorage），玩家回到大厅时接着查。
+- 平台抽 6%（5 元到手 4.70），当月收入次月 1 号进余额。
+
 本地测试付款流程：
 
 ```bash

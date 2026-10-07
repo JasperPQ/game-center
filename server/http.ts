@@ -11,13 +11,13 @@ import {
   resetPassword,
 } from "./accounts.js";
 import { verifyAdminToken } from "./admin-token.js";
+import { readBody } from "./body.js";
 import { createOrder, findOrder, fulfilOrder, listOrders, toPublicOrder } from "./orders.js";
 import { activeProvider } from "./payments.js";
 import { clientIp, RateLimiter } from "./rate-limit.js";
 
 const SESSION_COOKIE = "gc_session";
 const SESSION_MAX_AGE_SECONDS = 30 * 24 * 60 * 60;
-const MAX_BODY_BYTES = 16 * 1024;
 const HOUR_MS = 60 * 60 * 1000;
 const TOO_MANY = "操作太频繁了，请稍后再试。";
 
@@ -26,37 +26,6 @@ const registerLimiter = new RateLimiter(5, 24 * HOUR_MS);
 const loginFailureLimiter = new RateLimiter(10, HOUR_MS / 4);
 const redeemFailureLimiter = new RateLimiter(10, HOUR_MS);
 const orderLimiter = new RateLimiter(20, HOUR_MS);
-
-function readBody(request: IncomingMessage): Promise<unknown> {
-  return new Promise((resolve, reject) => {
-    const chunks: Buffer[] = [];
-    let size = 0;
-    let failed = false;
-    request.on("data", (chunk: Buffer) => {
-      if (failed) return;
-      size += chunk.length;
-      if (size > MAX_BODY_BYTES) {
-        failed = true;
-        reject(new Error("请求体过大。"));
-        return;
-      }
-      chunks.push(chunk);
-    });
-    request.on("end", () => {
-      if (failed) return;
-      if (chunks.length === 0) {
-        resolve({});
-        return;
-      }
-      try {
-        resolve(JSON.parse(Buffer.concat(chunks).toString("utf8")));
-      } catch {
-        reject(new Error("请求体不是合法的 JSON。"));
-      }
-    });
-    request.on("error", reject);
-  });
-}
 
 function getCookies(request: IncomingMessage): Record<string, string> {
   const header = request.headers.cookie;
@@ -254,7 +223,9 @@ export async function handleApiRequest(request: IncomingMessage, response: Serve
         sendJson(response, 404, { error: "订单不存在。" });
         return true;
       }
-      sendJson(response, 200, { order: toPublicOrder(order), user });
+      // 还没到账就让渠道去查一下（有节流），玩家等结果时不用干等 Webhook；记账后账号到期时间会变，重新读一次。
+      if (order.status === "pending") await activeProvider()?.sync?.();
+      sendJson(response, 200, { order: toPublicOrder(order), user: currentUser(sessionToken(request)) });
       return true;
     }
 

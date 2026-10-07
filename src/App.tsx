@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent, type MouseEvent } from "react";
 import { PRICE_PER_MONTH_YUAN, TRIAL_DAYS } from "../shared/pricing";
 import type { GuestbookEntry, PublicAccount } from "../shared/types";
-import { Account } from "./Account";
+import { Account, readPendingOrder } from "./Account";
 import { api } from "./api";
 import { useBoardStyle } from "./boardStyle";
 import Guestbook from "./Guestbook";
@@ -141,7 +141,8 @@ function TtrArt() {
 // 网关拦下没订阅的访客时会带着 ?gate=login|expired&next=<游戏路径> 回到大厅；付款页回来时带 ?order=<订单号>。
 const landingParams = new URLSearchParams(window.location.search);
 const landingGate = landingParams.get("gate");
-const landingOrderId = landingParams.get("order");
+// 没带订单号回来（比如从爱发电自己点回大厅）时，接着查上次跳去付款的那一单。
+const landingOrderId = landingParams.get("order") ?? readPendingOrder();
 const JINGMAI_GAME = { id: "jingmai", name: "晶脉", url: JINGMAI_URL };
 const landingNextGame = [...GAMES, JINGMAI_GAME].find((game) => game.url === `/${landingParams.get("next") ?? ""}/`) ?? null;
 
@@ -169,7 +170,7 @@ function App() {
   useEffect(() => {
     api.me().then((response) => setUser(response.user)).catch(() => {});
     // 读完就把参数从地址栏去掉，刷新时不再重复提示。
-    if (landingGate || landingOrderId) {
+    if (landingParams.has("gate") || landingParams.has("order")) {
       window.history.replaceState(null, "", window.location.pathname);
     }
     if (landingGate || landingOrderId) scrollToAccount();

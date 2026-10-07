@@ -136,6 +136,12 @@ export function fulfilOrder(id: unknown, tradeNo: string, paidFen: number): Fulf
   return { ok: true, order, user, alreadyPaid: false };
 }
 
+/** 某个渠道在 sinceMs 之后创建、还没付的订单（后台对账用）。 */
+export function pendingOrders(provider: string, sinceMs: number): OrderRecord[] {
+  return orders.filter((order) =>
+    order.provider === provider && order.status === "pending" && Date.parse(order.createdAt) >= sinceMs);
+}
+
 /** 管理页用：最近的订单在前。 */
 export function listOrders(): PublicOrder[] {
   return orders.slice(-ADMIN_LIST_LIMIT).reverse().map(toPublicOrder);
