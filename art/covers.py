@@ -68,6 +68,11 @@ COVERS = {
         "colorful playing cards flipping through the air above the wooden counter, a small blue ice cube and a red "
         "heart on the counter, a lit ferris wheel in the distance, deep blue starry sky"
     ),
+    "seasalt": (
+        "a sunny white sand beach seen from above with colorful playing cards spread out on the sand, the cards show "
+        "cute sea creatures: a red crab, a small sailboat, a striped fish, a penguin and a seashell, turquoise waves "
+        "with white foam along the top, a red and white lighthouse on rocks in the corner"
+    ),
 }
 
 

@@ -16,6 +16,7 @@ import ttrCover from "./assets/pixel/covers/ttr.png";
 import cantstopCover from "./assets/pixel/covers/cantstop.png";
 import luckyCover from "./assets/pixel/covers/lucky.png";
 import flip7Cover from "./assets/pixel/covers/flip7.png";
+import seasaltCover from "./assets/pixel/covers/seasalt.png";
 import "./egg.css";
 import { ThemeToggle, useTheme } from "./theme";
 
@@ -99,6 +100,14 @@ const GAMES = [
     description: "一张一张翻牌：再要一张还是见好就收？翻到重复的数字就爆掉，凑齐 7 张不同的数字额外 +15。冻结、翻三能塞给别人，先到 200 分的那一轮打完，总分最高者获胜。",
     url: gameUrl("/flip7/", 5183),
     cover: flip7Cover,
+  },
+  {
+    id: "seasalt",
+    name: "海盐与纸",
+    tagline: "2–4 人 · 约 20 分钟",
+    description: "在海边收集卡牌、凑对子换效果：蟹翻弃牌堆、船再来一回合、鱼多摸一张、鲨鱼配泳者偷一张。卡牌分到 7 就能喊停，稳稳 STOP 还是赌一把「最后机会」？",
+    url: gameUrl("/seasalt/", 5184),
+    cover: seasaltCover,
   },
 ] as const;
 
