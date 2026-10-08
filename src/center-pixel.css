@@ -45,7 +45,7 @@ body { background: repeating-conic-gradient(#13101a 0 25%, #0e0c13 0 50%) 0 0 / 
   .game-card, .game-card-enter, .guestbook-form, .guestbook-list, .guestbook-count, .text-input, .primary-button,
   .quiet-button, .guestbook-delete, .guestbook-entry-avatar, .guestbook-admin, .guestbook-admin-button,
   .account-panel, .account-tab, .account-redeem-button, .account-admin, .account-admin-button, .account-badge,
-  .account-admin-codes, .account-notice, .account-plan
+  .account-admin-codes, .account-notice, .account-plan, .account-wechat-code
 ) {
   border: 0;
   border-radius: 0;
@@ -235,6 +235,11 @@ body { background: repeating-conic-gradient(#13101a 0 25%, #0e0c13 0 50%) 0 0 / 
 .app-shell .account-plan.active { --rim: #fff2b8; --shade: #7a5410; color: #2a1c06; background: var(--gold); }
 .app-shell .account-plan-months { font-weight: 400; }
 .app-shell .account-plan-price { font-size: 12px; }
+.app-shell .account-wechat { border-top: var(--px) solid var(--panel-2); }
+.app-shell .account-wechat .field-label { color: var(--text); font-size: 12px; font-weight: 400; letter-spacing: 0; }
+.app-shell .account-wechat-steps { color: var(--text); font-size: 12px; }
+.app-shell .account-wechat-steps strong { color: var(--gold); font-weight: 400; }
+.app-shell .account-wechat-code { --rim: #fff2b8; --shade: #7a5410; color: #2a1c06; background: var(--gold); font-size: 48px; }
 .app-shell .account-redeem { border-top: var(--px) solid var(--panel-2); }
 .app-shell .account-redeem .field-label { color: var(--text); font-size: 12px; font-weight: 400; letter-spacing: 0; }
 .app-shell .account-redeem-button { padding: 0 14px; font-size: 12px; }

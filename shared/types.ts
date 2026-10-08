@@ -43,6 +43,10 @@ export interface PublicAccount {
   readonly lifetime: boolean;
   readonly daysLeft: number;
   readonly lastLoginAt: string | null;
+  /** 绑定过公众号。 */
+  readonly wechatBound: boolean;
+  /** 领过试用（注册送的或公众号领的）；没领过的可以去公众号领。 */
+  readonly trialClaimed: boolean;
 }
 
 /** 订单（给前端和管理页看的部分）。金额单位是分。 */

@@ -111,7 +111,7 @@ const GAMES = [
   },
 ] as const;
 
-// 网关拦下没订阅的访客时会带着 ?gate=login|expired&next=<游戏路径> 回到大厅；付款页回来时带 ?order=<订单号>。
+// 网关拦下没订阅的访客时会带着 ?gate=login|expired|trial&next=<游戏路径> 回到大厅；付款页回来时带 ?order=<订单号>。
 const landingParams = new URLSearchParams(window.location.search);
 const landingGate = landingParams.get("gate");
 // 没带订单号回来（比如从爱发电自己点回大厅）时，接着查上次跳去付款的那一单。
@@ -122,6 +122,7 @@ const landingNextGame = [...GAMES, JINGMAI_GAME].find((game) => game.url === `/$
 function gateNotice(gate: string | null): string {
   if (gate === "login") return "请先登录，登录后才能进入游戏。";
   if (gate === "expired") return "订阅已到期，续费后就能继续进入游戏。";
+  if (gate === "trial") return "账号还没开通：关注公众号领试用，或者直接付款开通。";
   return "";
 }
 
@@ -155,7 +156,7 @@ function App() {
   function handleGameClick(event: MouseEvent<HTMLAnchorElement>) {
     if (user && user.subscribed) return;
     event.preventDefault();
-    setAccountNotice(gateNotice(user ? "expired" : "login"));
+    setAccountNotice(gateNotice(!user ? "login" : user.trialClaimed || user.paid ? "expired" : "trial"));
     scrollToAccount();
   }
 
@@ -237,7 +238,7 @@ function App() {
             <img src={eggUrl} alt="" width={42} height={58} />
           </a>
         </div>
-        <p>注册就送 {TRIAL_DAYS} 天试用，之后 {PRICE_PER_MONTH_YUAN} 元 / 月。选一款游戏，创建房间把房间码发给朋友（朋友也要登录）就能开始。</p>
+        <p>新用户送 {TRIAL_DAYS} 天试用，之后 {PRICE_PER_MONTH_YUAN} 元 / 月。选一款游戏，创建房间把房间码发给朋友（朋友也要登录）就能开始。</p>
       </section>
 
       {accountNotice && <p className="account-notice" role="status">{accountNotice}</p>}

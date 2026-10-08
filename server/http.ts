@@ -16,6 +16,7 @@ import { readBody } from "./body.js";
 import { createOrder, findOrder, fulfilOrder, listOrders, toPublicOrder } from "./orders.js";
 import { activeProvider } from "./payments.js";
 import { clientIp, RateLimiter } from "./rate-limit.js";
+import { handleWechatRequest, issueBindCode, wechatName, wechatTrialEnabled } from "./wechat.js";
 
 const SESSION_COOKIE = "gc_session";
 const SESSION_MAX_AGE_SECONDS = 30 * 24 * 60 * 60;
@@ -91,7 +92,8 @@ function handleAuthCheck(request: IncomingMessage, response: ServerResponse): vo
     response.end("未登录或订阅已到期");
     return;
   }
-  const params = new URLSearchParams({ gate: user ? "expired" : "login" });
+  // 从没开通过（公众号领试用模式下注册、还没领）的账号单独提示去领试用。
+  const params = new URLSearchParams({ gate: !user ? "login" : user.trialClaimed || user.paid ? "expired" : "trial" });
   const game = typeof originalUri === "string" ? /^\/([a-z0-9-]+)\//.exec(originalUri)?.[1] : undefined;
   if (game) params.set("next", game);
   response.writeHead(302, { location: `/?${params.toString()}`, "cache-control": "no-store" });
@@ -123,7 +125,7 @@ export async function handleApiRequest(request: IncomingMessage, response: Serve
         return true;
       }
       const body = await readBody(request) as { username?: unknown; password?: unknown };
-      const result = register(body.username, body.password);
+      const result = register(body.username, body.password, !wechatTrialEnabled());
       if (!result.ok) {
         sendJson(response, 400, { error: result.error });
         return true;
@@ -179,6 +181,30 @@ export async function handleApiRequest(request: IncomingMessage, response: Serve
         return true;
       }
       sendJson(response, 200, { user: result.user });
+      return true;
+    }
+
+    if (path === "/api/wechat") {
+      await handleWechatRequest(request, response, url);
+      return true;
+    }
+
+    if (method === "GET" && path === "/api/wechat/config") {
+      sendJson(response, 200, { enabled: wechatTrialEnabled(), name: wechatName() });
+      return true;
+    }
+
+    if (method === "GET" && path === "/api/wechat/bind-code") {
+      const user = currentUser(sessionToken(request));
+      if (!user) {
+        sendJson(response, 401, { error: "请先登录。" });
+        return true;
+      }
+      if (!wechatTrialEnabled() || user.trialClaimed) {
+        sendJson(response, 400, { error: "这个账号已经领过试用了。" });
+        return true;
+      }
+      sendJson(response, 200, issueBindCode(user.username));
       return true;
     }
 

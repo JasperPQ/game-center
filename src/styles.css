@@ -251,6 +251,9 @@ button:focus-visible, input:focus-visible, a:focus-visible {
 .account-plan-price { font-size: 11px; }
 .account-pay { margin-top: 12px; }
 .account-continue { max-width: 460px; margin: 0 0 10px; text-decoration: none; }
+.account-wechat { margin-top: 18px; border-top: 1px solid #efede6; padding-top: 16px; }
+.account-wechat-steps { margin: 8px 0 0; padding-left: 20px; line-height: 1.8; }
+.account-wechat-code { margin: 12px 0 0; padding: 12px 0; text-align: center; font-size: 48px; letter-spacing: 0.2em; }
 .account-redeem { margin-top: 18px; border-top: 1px solid #efede6; padding-top: 16px; }
 .account-redeem .field-label { display: block; }
 .account-redeem-row { display: flex; gap: 8px; }

@@ -20,6 +20,15 @@ export interface CreateOrderResponse {
   order: PublicOrder;
   checkout: { kind: "redirect"; url: string };
 }
+export interface WechatConfigResponse {
+  /** 打开后注册不送试用，要去公众号发绑定码领。 */
+  enabled: boolean;
+  name: string | null;
+}
+export interface BindCodeResponse {
+  code: string;
+  expiresAt: string;
+}
 export interface OrderResponse {
   order: PublicOrder;
   user: PublicAccount;
@@ -54,6 +63,8 @@ export const api = {
   logout: () => request<{ ok: boolean }>("/api/logout", { method: "POST" }),
   redeem: (code: string) => request<AuthResponse>("/api/redeem", post("/api/redeem", { code })),
   payConfig: () => request<PayConfigResponse>("/api/pay/config"),
+  wechatConfig: () => request<WechatConfigResponse>("/api/wechat/config"),
+  bindCode: () => request<BindCodeResponse>("/api/wechat/bind-code"),
   createOrder: (months: number) =>
     request<CreateOrderResponse>("/api/orders", post("/api/orders", { months })),
   order: (id: string) => request<OrderResponse>(`/api/orders/${encodeURIComponent(id)}`),

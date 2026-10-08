@@ -27,6 +27,10 @@ export interface AccountRecord {
   paid: boolean;
   /** 永久会员：管理员给自己人开的，不看到期时间。 */
   lifetime: boolean;
+  /** 绑定的公众号 openid；一个微信只能绑一个账号、领一次试用。 */
+  wechatOpenId: string | null;
+  /** 领过试用没有。老账号注册时就送了试用，读进来一律算领过。 */
+  trialClaimed: boolean;
 }
 
 export interface RedeemCodeRecord {
@@ -52,6 +56,10 @@ export type AccountResult =
 export type AccountMutationResult =
   | { ok: true; user: PublicAccount }
   | { ok: false; error: string };
+
+export type WechatTrialResult =
+  | { ok: true; user: PublicAccount }
+  | { ok: false; reason: "missing" | "claimed" | "wechat-used"; boundTo?: string };
 
 export type AdminAccountResult =
   | { ok: true; account: PublicAccount }
@@ -84,7 +92,10 @@ function writeJsonAtomic(path: string, value: unknown): void {
   renameSync(temporaryPath, path);
 }
 
-function isAccountRecord(value: unknown): value is Omit<AccountRecord, "paid" | "lifetime"> & { paid?: boolean; lifetime?: boolean } {
+type StoredAccount = Omit<AccountRecord, "paid" | "lifetime" | "wechatOpenId" | "trialClaimed">
+  & { paid?: boolean; lifetime?: boolean; wechatOpenId?: string | null; trialClaimed?: boolean };
+
+function isAccountRecord(value: unknown): value is StoredAccount {
   if (!value || typeof value !== "object") return false;
   const record = value as Record<string, unknown>;
   return typeof record.username === "string"
@@ -112,7 +123,13 @@ function loadAccounts(): AccountRecord[] {
   }
   return (parsed as { accounts: unknown[] }).accounts
     .filter(isAccountRecord)
-    .map((account) => ({ ...account, paid: account.paid === true, lifetime: account.lifetime === true }));
+    .map((account) => ({
+      ...account,
+      paid: account.paid === true,
+      lifetime: account.lifetime === true,
+      wechatOpenId: typeof account.wechatOpenId === "string" ? account.wechatOpenId : null,
+      trialClaimed: account.trialClaimed !== false,
+    }));
 }
 
 function loadCodes(): RedeemCodeRecord[] {
@@ -231,6 +248,8 @@ function toPublicAccount(account: AccountRecord): PublicAccount {
     lifetime: account.lifetime,
     daysLeft: daysLeft(account),
     lastLoginAt: account.lastLoginAt,
+    wechatBound: account.wechatOpenId !== null,
+    trialClaimed: account.trialClaimed,
   };
 }
 
@@ -272,7 +291,8 @@ export function currentUser(token: string | null): PublicAccount | null {
   return account ? toPublicAccount(account) : null;
 }
 
-export function register(usernameValue: unknown, passwordValue: unknown): AccountResult {
+/** withTrial 为 false 时（公众号领试用模式）新账号不带试用，要绑定微信后才送。 */
+export function register(usernameValue: unknown, passwordValue: unknown, withTrial = true): AccountResult {
   const username = normalizeUsername(usernameValue);
   if (!username) {
     return { ok: false, error: `用户名需为 ${USERNAME_MIN}–${USERNAME_MAX} 个字符，只能含字母、数字、下划线和横线。` };
@@ -291,11 +311,12 @@ export function register(usernameValue: unknown, passwordValue: unknown): Accoun
     salt,
     passwordHash: hashPassword(password, salt),
     createdAt: new Date(now).toISOString(),
-    // 新账号直接送试用，到期后再付费。
-    expiresAt: new Date(now + TRIAL_DAYS * DAY_MS).toISOString(),
+    expiresAt: withTrial ? new Date(now + TRIAL_DAYS * DAY_MS).toISOString() : null,
     lastLoginAt: null,
     paid: false,
     lifetime: false,
+    wechatOpenId: null,
+    trialClaimed: withTrial,
   };
   accounts = [...accounts, account];
   saveAccounts();
@@ -328,6 +349,25 @@ export function redeem(username: string, codeValue: unknown): AccountMutationRes
   if (record.lifetime) account.lifetime = true;
   else extendAccount(account, record.months);
   saveCodes();
+  saveAccounts();
+  return { ok: true, user: toPublicAccount(account) };
+}
+
+/**
+ * 公众号里发了绑定码：把这个微信绑到账号上，送试用（从现在或原到期时间往后加 TRIAL_DAYS 天）。
+ * 账号领过试用、或者这个微信已经绑过别的账号，都不送。
+ */
+export function claimWechatTrial(username: string, openId: string): WechatTrialResult {
+  const account = findAccount(username);
+  if (!account) return { ok: false, reason: "missing" };
+  const owner = accounts.find((candidate) => candidate.wechatOpenId === openId);
+  if (owner) return { ok: false, reason: "wechat-used", boundTo: owner.username };
+  if (account.trialClaimed) return { ok: false, reason: "claimed" };
+  const now = Date.now();
+  const base = account.expiresAt !== null && Date.parse(account.expiresAt) > now ? Date.parse(account.expiresAt) : now;
+  account.expiresAt = new Date(base + TRIAL_DAYS * DAY_MS).toISOString();
+  account.wechatOpenId = openId;
+  account.trialClaimed = true;
   saveAccounts();
   return { ok: true, user: toPublicAccount(account) };
 }

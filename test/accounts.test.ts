@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { AddressInfo } from "node:net";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -61,6 +62,28 @@ async function registerUser(username: string, ip: string): Promise<{ user: Publi
   return { user: ((await response.json()) as { user: PublicAccount }).user, cookie: cookie! };
 }
 
+
+const wechatToken = "test-wechat-token";
+
+/** 带上公众号签名的 /api/wechat 地址。 */
+function wechatUrl(extra: Record<string, string> = {}, token = wechatToken): string {
+  const timestamp = "1700000000";
+  const nonce = "12345";
+  const signature = createHash("sha1").update([token, timestamp, nonce].sort().join("")).digest("hex");
+  return `/api/wechat?${new URLSearchParams({ signature, timestamp, nonce, ...extra }).toString()}`;
+}
+
+/** 模拟微信用户在公众号里发一条文字，返回公众号回复的内容。 */
+async function sendWechatText(openId: string, content: string): Promise<string> {
+  const xml = `<xml><ToUserName><![CDATA[gh_test]]></ToUserName><FromUserName><![CDATA[${openId}]]></FromUserName>`
+    + `<CreateTime>1700000000</CreateTime><MsgType><![CDATA[text]]></MsgType><Content><![CDATA[${content}]]></Content>`
+    + `<MsgId>1</MsgId></xml>`;
+  const response = await fetch(`${serverUrl}${wechatUrl()}`, { method: "POST", body: xml, headers: { "Content-Type": "text/xml" } });
+  expect(response.status).toBe(200);
+  const reply = await response.text();
+  expect(reply).toContain(`<ToUserName><![CDATA[${openId}]]></ToUserName>`);
+  return /<Content><!\[CDATA\[([\s\S]*?)\]\]><\/Content>/.exec(reply)?.[1] ?? "";
+}
 
 /** 从注册/登录响应的 Set-Cookie 里取出会话 cookie（"gc_session=…"）。 */
 function sessionCookie(response: Response): string | null {
@@ -373,5 +396,64 @@ describe("Game Center accounts and subscription", () => {
       ip: "10.0.0.68",
     });
     expect(locked.status).toBe(429);
+  });
+
+  it("answers the WeChat server check only with a valid signature", async () => {
+    process.env.WECHAT_TOKEN = wechatToken;
+    try {
+      const ok = await request(wechatUrl({ echostr: "hello-echo" }));
+      expect(ok.status).toBe(200);
+      expect(await ok.text()).toBe("hello-echo");
+      const forged = await request(wechatUrl({ echostr: "hello-echo" }, "wrong-token"));
+      expect(forged.status).toBe(403);
+    } finally {
+      delete process.env.WECHAT_TOKEN;
+    }
+  });
+
+  it("gives the trial through the WeChat account, once per WeChat user", async () => {
+    process.env.WECHAT_TOKEN = wechatToken;
+    process.env.WECHAT_TRIAL = "on";
+    try {
+      const config = await (await request("/api/wechat/config")).json() as { enabled: boolean };
+      expect(config.enabled).toBe(true);
+
+      const { user, cookie } = await registerUser("Wendy", "10.0.1.1");
+      expect(user.subscribed).toBe(false);
+      expect(user.trialClaimed).toBe(false);
+      const gate = await checkAuth(cookie);
+      expect(gate.status).toBe(302);
+      expect(gate.headers.get("location")).toContain("gate=trial");
+
+      const bind = await (await request("/api/wechat/bind-code", { cookie })).json() as { code: string };
+      expect(bind.code).toMatch(/^\d{6}$/);
+      const again = await (await request("/api/wechat/bind-code", { cookie })).json() as { code: string };
+      expect(again.code).toBe(bind.code);
+
+      const wrong = bind.code === "000000" ? "111111" : "000000";
+      expect(await sendWechatText("openid-wendy", wrong)).toContain("不对");
+      expect(await sendWechatText("openid-wendy", bind.code)).toContain("领取成功");
+      const me = await (await request("/api/me", { cookie })).json() as { user: PublicAccount };
+      expect(me.user.subscribed).toBe(true);
+      expect(me.user.trial).toBe(true);
+      expect(me.user.wechatBound).toBe(true);
+      expect(me.user.daysLeft).toBe(TRIAL_DAYS);
+      expect((await checkAuth(cookie)).status).toBe(200);
+      expect((await request("/api/wechat/bind-code", { cookie })).status).toBe(400);
+
+      // 同一个微信再给小号领：不给。
+      const second = await registerUser("WendyAlt", "10.0.1.2");
+      const altCode = await (await request("/api/wechat/bind-code", { cookie: second.cookie })).json() as { code: string };
+      expect(await sendWechatText("openid-wendy", altCode.code)).toContain("Wendy");
+      const alt = await (await request("/api/me", { cookie: second.cookie })).json() as { user: PublicAccount };
+      expect(alt.user.subscribed).toBe(false);
+
+      // 换一个微信就能给这个号领。
+      expect(await sendWechatText("openid-other", altCode.code)).toContain("领取成功");
+      expect(await sendWechatText("openid-other", "续费")).toContain("gulugagame.com");
+    } finally {
+      delete process.env.WECHAT_TOKEN;
+      delete process.env.WECHAT_TRIAL;
+    }
   });
 });

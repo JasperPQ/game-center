@@ -1,10 +1,12 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { formatYuan, PLAN_MONTHS, PRICE_PER_MONTH_YUAN, priceFen, TRIAL_DAYS } from "../shared/pricing";
 import type { PublicAccount, PublicOrder } from "../shared/types";
-import { api, type PayConfigResponse } from "./api";
+import { api, type PayConfigResponse, type WechatConfigResponse } from "./api";
 
 const ORDER_POLL_MS = 3_000;
 const ORDER_POLL_LIMIT = 40;
+/** 等玩家去公众号发码时，隔这么久查一次领到没有。 */
+const WECHAT_POLL_MS = 4_000;
 const PENDING_ORDER_KEY = "game-center-pending-order";
 const PENDING_ORDER_TTL_MS = 24 * 60 * 60 * 1000;
 
@@ -76,6 +78,16 @@ export function Account({
   /** 从付款页回来时网址上带的订单号，用来查付款结果。 */
   returningOrderId: string | null;
 }) {
+  const [wechat, setWechat] = useState<WechatConfigResponse | null>(null);
+
+  useEffect(() => {
+    api.wechatConfig().then(setWechat).catch(() => setWechat({ enabled: false, name: null }));
+  }, []);
+
+  const trialHint = wechat?.enabled
+    ? `注册后关注公众号领 ${TRIAL_DAYS} 天试用`
+    : `注册就送 ${TRIAL_DAYS} 天试用`;
+
   return (
     <section className="account" id="account" aria-labelledby="account-title">
       <div className="account-heading">
@@ -85,15 +97,15 @@ export function Account({
           <p>
             {user
               ? `订阅有效期内，所有游戏都能进。${PRICE_PER_MONTH_YUAN} 元 / 月。`
-              : `注册就送 ${TRIAL_DAYS} 天试用，之后 ${PRICE_PER_MONTH_YUAN} 元 / 月，所有游戏都能玩。`}
+              : `${trialHint}，之后 ${PRICE_PER_MONTH_YUAN} 元 / 月，所有游戏都能玩。`}
           </p>
         </div>
       </div>
 
       {user ? (
-        <AccountStatus user={user} onUserChange={onUserChange} returningOrderId={returningOrderId} />
+        <AccountStatus user={user} onUserChange={onUserChange} returningOrderId={returningOrderId} wechat={wechat} />
       ) : (
-        <LoginRegister onUserChange={onUserChange} />
+        <LoginRegister onUserChange={onUserChange} trialHint={trialHint} />
       )}
 
       {adminEntryEnabled && <AccountAdmin />}
@@ -101,7 +113,7 @@ export function Account({
   );
 }
 
-function LoginRegister({ onUserChange }: { onUserChange: (user: PublicAccount) => void }) {
+function LoginRegister({ onUserChange, trialHint }: { onUserChange: (user: PublicAccount) => void; trialHint: string }) {
   const [mode, setMode] = useState<"login" | "register">("login");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -183,7 +195,7 @@ function LoginRegister({ onUserChange }: { onUserChange: (user: PublicAccount) =
           {busy ? <><span className="spinner" /> 请稍候</> : mode === "login" ? "登录" : "注册并登录"}
         </button>
         {mode === "register" ? (
-          <p className="account-hint">注册即登录，送 {TRIAL_DAYS} 天试用；之后 {PRICE_PER_MONTH_YUAN} 元 / 月。</p>
+          <p className="account-hint">注册即登录，{trialHint}；之后 {PRICE_PER_MONTH_YUAN} 元 / 月。</p>
         ) : (
           <p className="account-hint">忘记密码请在下方留言板留言，管理员帮你重置。</p>
         )}
@@ -194,13 +206,14 @@ function LoginRegister({ onUserChange }: { onUserChange: (user: PublicAccount) =
 
 function statusBadge(user: PublicAccount): string {
   if (user.lifetime) return "永久会员";
-  if (!user.subscribed) return user.paid ? "订阅已到期" : "试用已结束";
+  if (!user.subscribed) return user.paid ? "订阅已到期" : user.trialClaimed ? "试用已结束" : "未开通";
   if (user.trial) return `试用中 · 还剩 ${user.daysLeft} 天`;
   return `订阅至 ${formatDate(user.expiresAt)}（还剩 ${user.daysLeft} 天）`;
 }
 
 function statusNote(user: PublicAccount): string {
   if (user.lifetime) return "永久会员，所有游戏随便玩，不用续费。";
+  if (!user.subscribed && !user.paid && !user.trialClaimed) return "还没开通。按上面的步骤去公众号领试用，或者在下方直接付款开通。";
   if (!user.subscribed) return "游戏入口暂时关闭了。在下方续费，或输入兑换码，马上就能继续玩。";
   if (user.trial) return `试用期内所有游戏都能玩。试用结束后 ${PRICE_PER_MONTH_YUAN} 元 / 月，现在续费，剩下的试用天数照样保留。`;
   if (user.daysLeft <= 3) return "订阅快到期了，续费后从原到期日往后顺延。";
@@ -211,10 +224,12 @@ function AccountStatus({
   user,
   onUserChange,
   returningOrderId,
+  wechat,
 }: {
   user: PublicAccount;
   onUserChange: (user: PublicAccount | null) => void;
   returningOrderId: string | null;
+  wechat: WechatConfigResponse | null;
 }) {
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
@@ -254,6 +269,10 @@ function AccountStatus({
         </span>
       </div>
 
+      {wechat?.enabled && !user.trialClaimed && (
+        <WechatTrial wechatName={wechat.name} onUserChange={onUserChange} />
+      )}
+
       <p className={user.lifetime || user.subscribed && user.daysLeft > 3 ? "account-status-note" : "account-status-note account-status-note-warn"}>
         {statusNote(user)}
       </p>
@@ -285,6 +304,65 @@ function AccountStatus({
       )}
 
       <button className="account-logout" type="button" onClick={logout}>退出登录</button>
+    </div>
+  );
+}
+
+/** 公众号领试用：显示绑定码，玩家在公众号发出去以后轮询账号，领到了就刷新状态。 */
+function WechatTrial({
+  wechatName,
+  onUserChange,
+}: {
+  wechatName: string | null;
+  onUserChange: (user: PublicAccount | null) => void;
+}) {
+  const [code, setCode] = useState<string | null>(null);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    let timer: number | undefined;
+    const loadCode = () => {
+      api.bindCode()
+        .then((response) => {
+          if (cancelled) return;
+          setCode(response.code);
+          setError("");
+          // 码快过期时（服务端 30 分钟）换一个新的。
+          timer = window.setTimeout(loadCode, Math.max(60_000, Date.parse(response.expiresAt) - Date.now() - 5 * 60_000));
+        })
+        .catch((reason: unknown) => {
+          if (!cancelled) setError(reason instanceof Error ? reason.message : "读取验证码失败，请刷新页面。");
+        });
+    };
+    loadCode();
+    const poll = window.setInterval(() => {
+      api.me()
+        .then((response) => {
+          if (!cancelled && response.user?.trialClaimed) onUserChange(response.user);
+        })
+        .catch(() => {});
+    }, WECHAT_POLL_MS);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+      window.clearInterval(poll);
+    };
+    // 只在面板出现时开始；领到后面板消失，清理函数停掉轮询。
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <div className="account-wechat">
+      <span className="field-label">领 {TRIAL_DAYS} 天免费试用</span>
+      <ol className="account-wechat-steps">
+        <li>微信搜索并关注公众号{wechatName ? <strong>「{wechatName}」</strong> : null}</li>
+        <li>在公众号里发送下面的数字</li>
+      </ol>
+      <div className="account-wechat-code" aria-live="polite">{code ?? "······"}</div>
+      {error
+        ? <p className="feedback feedback-error" role="alert">{error}</p>
+        : <p className="account-hint">发送后这里会自动开通，不用刷新。每个微信只能领一次。</p>}
     </div>
   );
 }
@@ -688,7 +766,9 @@ function AccountAdmin() {
                   <td>{formatDate(account.expiresAt)}</td>
                   <td>
                     {account.lifetime ? "永久"
-                      : account.subscribed ? `${account.trial ? "试用" : "有效"} · ${account.daysLeft} 天` : "已到期"}
+                      : account.subscribed ? `${account.trial ? "试用" : "有效"} · ${account.daysLeft} 天`
+                      : account.trialClaimed || account.paid ? "已到期" : "未开通"}
+                    {account.wechatBound && " · 微信"}
                   </td>
                   <td className="account-admin-actions">
                     <button className="account-admin-button" type="button" disabled={busy} onClick={() => extend(account.username)}>
