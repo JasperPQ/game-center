@@ -1,9 +1,0 @@
-/* 画面切换按钮在原始版本里的样子（原 styles.css 没有这类按钮，样式照宝石商人原版的 quiet-button）。
-   像素版时 center-pixel.css 里的规则更具体，会覆盖这里。 */
-.topbar-right { display: flex; align-items: center; gap: 18px; }
-.style-toggle { border: 1px solid #dedbd1; border-radius: 7px; padding: 9px 13px; background: transparent; color: #7f847c; cursor: pointer; font-size: 11px; }
-.style-toggle:hover { border-color: #b7b2a5; color: var(--ink); }
-@media (max-width: 520px) {
-  .topbar-right { gap: 10px; }
-  .style-toggle { padding: 7px 9px; font-size: 10px; }
-}

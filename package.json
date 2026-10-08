@@ -24,6 +24,7 @@
     "@types/react-dom": "^19.1.7",
     "@vitejs/plugin-react": "^5.0.0",
     "concurrently": "^9.2.1",
+    "postcss": "^8.5.29",
     "tsx": "^4.20.5",
     "typescript": "^5.9.3",
     "vite": "^7.0.0",

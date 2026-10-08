@@ -3,7 +3,6 @@ import { PRICE_PER_MONTH_YUAN, TRIAL_DAYS } from "../shared/pricing";
 import type { GuestbookEntry, PublicAccount } from "../shared/types";
 import { Account, readPendingOrder } from "./Account";
 import { api } from "./api";
-import { useBoardStyle } from "./boardStyle";
 import Guestbook from "./Guestbook";
 import { socket } from "./socket";
 import eggUrl from "./assets/pixel/egg.png";
@@ -16,9 +15,7 @@ import azulCover from "./assets/pixel/covers/azul.png";
 import ttrCover from "./assets/pixel/covers/ttr.png";
 import cantstopCover from "./assets/pixel/covers/cantstop.png";
 import "./egg.css";
-import "./style-toggle.css";
-// 像素风皮肤：只在像素版时放进页面，叠在原始的 styles.css 上。
-import centerPixelCss from "./center-pixel.css?inline";
+import { ThemeToggle, useTheme } from "./theme";
 
 /** 线上按路径访问各游戏；本地开发时各游戏跑在自己的端口上。 */
 function gameUrl(path: string, devPort: number): string {
@@ -109,9 +106,8 @@ function App() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
-  // 画面风格（默认像素版），顶栏按钮随时切换；和宝石商人共用同一个选择。
-  const [boardStyle, toggleBoardStyle] = useBoardStyle();
-  const pixel = boardStyle === "pixel";
+  // 白天 / 夜间画面，顶栏按钮随时切换；和各个游戏共用同一个选择。
+  const [theme, toggleTheme] = useTheme();
   // 登录状态；null 表示未登录，subscribed 决定能否进入游戏。
   const [user, setUser] = useState<PublicAccount | null>(null);
   const [accountNotice, setAccountNotice] = useState(() => gateNotice(landingGate));
@@ -183,7 +179,6 @@ function App() {
 
   return (
     <main className="app-shell">
-      {pixel && <style>{centerPixelCss}</style>}
       <header className="topbar">
         <a className="brand" href="/" aria-label="Game Center 首页">
           <span className="brand-mark" aria-hidden="true"><i /><i /><i /></span>
@@ -192,20 +187,13 @@ function App() {
         <div className="topbar-right">
           <button
             type="button"
-            className="quiet-button style-toggle account-entry"
+            className="quiet-button account-entry"
             onClick={scrollToAccount}
             title={user ? "查看订阅状态" : "登录或注册"}
           >
             {user ? user.username : "登录 / 注册"}
           </button>
-          <button
-            type="button"
-            className="quiet-button style-toggle"
-            onClick={toggleBoardStyle}
-            title={pixel ? "换回原始版本的画面（只影响你自己看到的）" : "换成像素风画面（只影响你自己看到的）"}
-          >
-            {pixel ? "切换原版" : "切换像素版"}
-          </button>
+          <ThemeToggle theme={theme} onToggle={toggleTheme} />
           <div className={connected ? "connection-status online" : "connection-status"}>
             <span className="connection-dot" />
             {connected ? "服务已连接" : "连接中…"}

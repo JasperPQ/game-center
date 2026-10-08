@@ -1,8 +1,10 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import { dayTheme } from "./day-theme";
+import { palette } from "./day-palette";
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), dayTheme(palette)],
   server: {
     port: 5175,
     strictPort: true,
