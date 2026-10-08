@@ -59,6 +59,10 @@ COVERS = {
         "stone pillars of different heights, small tents pitched on ledges, colorful flags planted on the snowy "
         "summits, four big white dice in the foreground, alpine peaks and a pink dawn sky behind"
     ),
+    "lucky": (
+        "a sunny garden table with a wooden 4 by 4 board of cream number tiles rising from small to large, "
+        "scattered lucky four-leaf clovers, a small cloth pouch of tiles, green grass and flowers around"
+    ),
 }
 
 

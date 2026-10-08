@@ -14,6 +14,7 @@ import camelCover from "./assets/pixel/covers/camel.png";
 import azulCover from "./assets/pixel/covers/azul.png";
 import ttrCover from "./assets/pixel/covers/ttr.png";
 import cantstopCover from "./assets/pixel/covers/cantstop.png";
+import luckyCover from "./assets/pixel/covers/lucky.png";
 import "./egg.css";
 import { ThemeToggle, useTheme } from "./theme";
 
@@ -81,6 +82,14 @@ const GAMES = [
     description: "掷 4 颗骰子两两分组往山上爬：再掷一次继续冒险，还是收手扎营保住进度？贪心爆掉就白爬，先登顶 3 条路的人获胜。",
     url: gameUrl("/cantstop/", 5181),
     cover: cantstopCover,
+  },
+  {
+    id: "lucky",
+    name: "幸运数字",
+    tagline: "2–4 人 · 约 15 分钟",
+    description: "把 1–20 的数字牌摆进自己的 4×4 棋盘，每一行、每一列都要从小到大。抽牌、拿别人弃的明牌、换下旧牌，第一个摆满 16 格的人获胜。",
+    url: gameUrl("/lucky/", 5182),
+    cover: luckyCover,
   },
 ] as const;
 
