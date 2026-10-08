@@ -143,11 +143,14 @@ function bindReply(openId: string, code: string): string {
 export async function handleWechatRequest(request: IncomingMessage, response: ServerResponse, url: URL): Promise<void> {
   const token = wechatToken();
   if (!token || !verifySignature(token, url)) {
+    // 只记有没有配置、签名对不对，方便排查公众号后台的配置；不记 openid 和消息内容。
+    console.log(`[wechat] ${request.method} ${token ? "签名不对" : "未配置 WECHAT_TOKEN"}`);
     response.writeHead(token ? 403 : 404, { "content-type": "text/plain; charset=utf-8" });
     response.end(token ? "bad signature" : "not configured");
     return;
   }
   if (request.method === "GET") {
+    console.log("[wechat] 公众号后台接入校验通过");
     response.writeHead(200, { "content-type": "text/plain; charset=utf-8" });
     response.end(url.searchParams.get("echostr") ?? "");
     return;
@@ -158,6 +161,8 @@ export async function handleWechatRequest(request: IncomingMessage, response: Se
   const reply = openId && accountId
     ? replyFor(openId, xmlField(xml, "MsgType") ?? "", xmlField(xml, "Event") ?? "", xmlField(xml, "Content") ?? "")
     : null;
+  const msgType = xmlField(xml, "MsgType") ?? "?";
+  console.log(`[wechat] 收到 ${msgType}${msgType === "event" ? `/${xmlField(xml, "Event") ?? "?"}` : ""}，回复：${reply ? reply.slice(0, 12) : "success"}`);
   // 不需要回复时按微信的约定回 "success"，否则公众号会提示「该公众号暂时无法提供服务」。
   response.writeHead(200, { "content-type": reply ? "application/xml; charset=utf-8" : "text/plain; charset=utf-8" });
   response.end(reply && openId && accountId ? textReply(openId, accountId, reply) : "success");
