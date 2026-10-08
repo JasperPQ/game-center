@@ -15,6 +15,7 @@ import azulCover from "./assets/pixel/covers/azul.png";
 import ttrCover from "./assets/pixel/covers/ttr.png";
 import cantstopCover from "./assets/pixel/covers/cantstop.png";
 import luckyCover from "./assets/pixel/covers/lucky.png";
+import flip7Cover from "./assets/pixel/covers/flip7.png";
 import "./egg.css";
 import { ThemeToggle, useTheme } from "./theme";
 
@@ -90,6 +91,14 @@ const GAMES = [
     description: "把 1–20 的数字牌摆进自己的 4×4 棋盘，每一行、每一列都要从小到大。抽牌、拿别人弃的明牌、换下旧牌，第一个摆满 16 格的人获胜。",
     url: gameUrl("/lucky/", 5182),
     cover: luckyCover,
+  },
+  {
+    id: "flip7",
+    name: "翻七",
+    tagline: "3–10 人 · 约 20 分钟",
+    description: "一张一张翻牌：再要一张还是见好就收？翻到重复的数字就爆掉，凑齐 7 张不同的数字额外 +15。冻结、翻三能塞给别人，先到 200 分的那一轮打完，总分最高者获胜。",
+    url: gameUrl("/flip7/", 5183),
+    cover: flip7Cover,
   },
 ] as const;
 

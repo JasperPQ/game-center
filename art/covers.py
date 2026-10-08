@@ -63,6 +63,11 @@ COVERS = {
         "a sunny garden table with a wooden 4 by 4 board of cream number tiles rising from small to large, "
         "scattered lucky four-leaf clovers, a small cloth pouch of tiles, green grass and flowers around"
     ),
+    "flip7": (
+        "a night carnival card game booth with a red and white striped awning and strings of warm light bulbs, "
+        "colorful playing cards flipping through the air above the wooden counter, a small blue ice cube and a red "
+        "heart on the counter, a lit ferris wheel in the distance, deep blue starry sky"
+    ),
 }
 
 

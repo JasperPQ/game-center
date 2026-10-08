@@ -92,7 +92,7 @@ function handleAuthCheck(request: IncomingMessage, response: ServerResponse): vo
     return;
   }
   const params = new URLSearchParams({ gate: user ? "expired" : "login" });
-  const game = typeof originalUri === "string" ? /^\/([a-z-]+)\//.exec(originalUri)?.[1] : undefined;
+  const game = typeof originalUri === "string" ? /^\/([a-z0-9-]+)\//.exec(originalUri)?.[1] : undefined;
   if (game) params.set("next", game);
   response.writeHead(302, { location: `/?${params.toString()}`, "cache-control": "no-store" });
   response.end();

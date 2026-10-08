@@ -150,6 +150,9 @@ describe("Game Center accounts and subscription", () => {
     const blocked = await checkAuth(null, { uri: "/camel/" });
     expect(blocked.status).toBe(302);
     expect(blocked.headers.get("location")).toBe("/?gate=login&next=camel");
+    // 路径里带数字的游戏（翻七 /flip7/）也要带上 next。
+    const blockedFlip7 = await checkAuth(null, { uri: "/flip7/" });
+    expect(blockedFlip7.headers.get("location")).toBe("/?gate=login&next=flip7");
     // socket.io、图片等非网页请求直接 401，不重定向。
     const blockedSocket = await checkAuth(null, { uri: "/camel/socket.io/?EIO=4", accept: "*/*" });
     expect(blockedSocket.status).toBe(401);
