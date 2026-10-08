@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { formatYuan, PLAN_MONTHS, PRICE_PER_MONTH_YUAN, priceFen, TRIAL_DAYS } from "../shared/pricing";
-import type { PublicAccount, PublicOrder } from "../shared/types";
+import type { AdminGameRooms, AdminRoom, PublicAccount, PublicOrder } from "../shared/types";
 import { api, type PayConfigResponse, type WechatConfigResponse } from "./api";
 
 const ORDER_POLL_MS = 3_000;
@@ -520,11 +520,15 @@ function formatAdminTime(value: string | null): string {
   }).format(date);
 }
 
+const ROOM_STATUS: Record<string, string> = { waiting: "等待开始", playing: "对局中", finished: "已结束" };
+
 function AccountAdmin() {
   const [token, setToken] = useState(() => readStoredAdminToken());
   const [tokenInput, setTokenInput] = useState("");
   const [accounts, setAccounts] = useState<PublicAccount[]>([]);
   const [orders, setOrders] = useState<PublicOrder[]>([]);
+  const [games, setGames] = useState<AdminGameRooms[] | null>(null);
+  const [roomsBusy, setRoomsBusy] = useState(false);
   const [months, setMonths] = useState("1");
   const [count, setCount] = useState("1");
   const [lifetimeCodes, setLifetimeCodes] = useState(false);
@@ -584,8 +588,59 @@ function AccountAdmin() {
     .filter((order) => order.status === "paid" && order.paidAt && Date.parse(order.paidAt) >= monthStart.getTime())
     .reduce((sum, order) => sum + order.amountFen, 0);
 
+  function loadRooms(nextToken: string) {
+    setRoomsBusy(true);
+    api.admin.rooms(nextToken)
+      .then((response) => {
+        setRoomsBusy(false);
+        setGames(response.games);
+      })
+      .catch((reason: unknown) => {
+        setRoomsBusy(false);
+        setError(reason instanceof Error ? reason.message : "读取房间失败。");
+      });
+  }
+
+  function dissolveRoom(game: AdminGameRooms, room: AdminRoom) {
+    const people = room.players.map((player) => player.name).join("、") || "没有玩家";
+    if (!window.confirm(`强制关闭${game.name}的房间 ${room.id.slice(0, 8)}（${people}）？房间里的人会被请出，正在进行的对局不会保存。`)) return;
+    setRoomsBusy(true);
+    setError("");
+    setNotice("");
+    api.admin.dissolveRoom(token, game.game, room.id)
+      .then(() => {
+        setNotice(`已关闭${game.name}的房间（${room.players.map((player) => player.name).join("、") || room.id.slice(0, 8)}）。`);
+        loadRooms(token);
+      })
+      .catch((reason: unknown) => {
+        setRoomsBusy(false);
+        setError(reason instanceof Error ? reason.message : "关闭失败。");
+        loadRooms(token);
+      });
+  }
+
+  function deleteAccount(account: PublicAccount) {
+    const paidNote = account.lifetime ? "这是永久会员账号，" : account.subscribed && !account.trial ? `这个账号还有 ${account.daysLeft} 天付费时长，` : "";
+    if (!window.confirm(`删除账号「${account.username}」？${paidNote}删除后不能恢复，这个人会被退出登录，用户名可以被重新注册。`)) return;
+    setBusy(true);
+    setError("");
+    setNotice("");
+    api.admin.deleteAccount(token, account.username)
+      .then(() => {
+        setNotice(`已删除账号「${account.username}」。`);
+        loadAccounts(token);
+      })
+      .catch((reason: unknown) => {
+        setBusy(false);
+        setError(reason instanceof Error ? reason.message : "删除失败。");
+      });
+  }
+
   useEffect(() => {
-    if (token) loadAccounts(token);
+    if (token) {
+      loadAccounts(token);
+      loadRooms(token);
+    }
     // 只在进入管理时读一次。
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
@@ -780,6 +835,9 @@ function AccountAdmin() {
                     <button className="account-admin-button" type="button" disabled={busy} onClick={() => resetPassword(account.username)}>
                       重置密码
                     </button>
+                    <button className="account-admin-button account-admin-danger" type="button" disabled={busy} onClick={() => deleteAccount(account)}>
+                      删除
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -788,6 +846,61 @@ function AccountAdmin() {
         </div>
       ) : (
         !busy && <p className="account-admin-empty">还没有注册账号。</p>
+      )}
+
+      <div className="account-admin-row account-admin-rooms-head">
+        <span>
+          游戏房间
+          {games && `（${games.reduce((sum, game) => sum + game.rooms.length, 0)} 个，其中对局中 ${games.reduce((sum, game) => sum + game.rooms.filter((room) => room.status === "playing").length, 0)} 个）`}
+        </span>
+        <button className="account-admin-button" type="button" disabled={roomsBusy} onClick={() => loadRooms(token)}>
+          {roomsBusy ? "读取中…" : "刷新房间"}
+        </button>
+      </div>
+      {games && (
+        games.some((game) => game.rooms.length > 0) ? (
+          <div className="account-admin-table-wrap">
+            <table className="account-admin-table">
+              <thead>
+                <tr>
+                  <th>游戏</th>
+                  <th>房间</th>
+                  <th>状态</th>
+                  <th>玩家</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                {games.flatMap((game) => game.rooms.map((room) => (
+                  <tr key={`${game.game}-${room.id}`}>
+                    <td>{game.name}</td>
+                    {/* 游戏的房间列表不带 6 位房间码，内部编号很长，只显示前 8 位，认房间主要看玩家 */}
+                    <td title={room.id}>{room.id.slice(0, 8)}</td>
+                    <td>{ROOM_STATUS[room.status] ?? room.status}</td>
+                    <td>
+                      {room.players.length === 0 ? "—" : room.players.map((player) => (
+                        <span key={player.name} className={player.connected ? undefined : "account-admin-offline"}>
+                          {player.name}{player.connected ? "" : "（离线）"}{" "}
+                        </span>
+                      ))}
+                      {room.spectators > 0 && ` · 观战 ${room.spectators}`}
+                    </td>
+                    <td>
+                      <button className="account-admin-button account-admin-danger" type="button" disabled={roomsBusy} onClick={() => dissolveRoom(game, room)}>
+                        强制关闭
+                      </button>
+                    </td>
+                  </tr>
+                )))}
+              </tbody>
+            </table>
+          </div>
+        ) : <p className="account-admin-empty">现在没有房间。</p>
+      )}
+      {games?.some((game) => game.error) && (
+        <p className="feedback feedback-error">
+          读不到：{games.filter((game) => game.error).map((game) => `${game.name}（${game.error}）`).join("；")}
+        </p>
       )}
 
       {orders.length > 0 && (

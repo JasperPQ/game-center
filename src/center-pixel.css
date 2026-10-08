@@ -72,6 +72,10 @@ body { background: repeating-conic-gradient(#13101a 0 25%, #0e0c13 0 50%) 0 0 / 
 .app-shell .guestbook-delete { --rim: #f25c5c; --shade: #3d0a12; padding: 0 6px; color: #ffd8d0; background: #6e1020; font-size: 12px; }
 .app-shell :is(.quiet-button, .guestbook-admin-button, .account-admin-button, .guestbook-delete):hover:not(:disabled) { filter: brightness(1.15); }
 .app-shell .guestbook-delete:hover:not(:disabled) { background: #6e1020; }
+/* 管理页里不可撤销的操作（删除账号、强制关闭房间）用和删除留言一样的红色 */
+.app-shell .account-admin-button.account-admin-danger { --rim: #f25c5c; --shade: #3d0a12; color: #ffd8d0; background: #6e1020; }
+.app-shell .account-admin-offline { color: var(--muted); }
+.app-shell .account-admin-rooms-head { margin-top: 18px; }
 .app-shell .primary-button:hover:not(:disabled) {
   background: var(--gold);
   filter: brightness(1.1);

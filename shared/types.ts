@@ -59,3 +59,21 @@ export interface PublicOrder {
   readonly createdAt: string;
   readonly paidAt: string | null;
 }
+
+/** 管理页看到的一个游戏房间。 */
+export interface AdminRoom {
+  readonly id: string;
+  /** waiting / playing / finished */
+  readonly status: string;
+  readonly capacity: number | null;
+  readonly spectators: number;
+  readonly players: ReadonlyArray<{ readonly name: string; readonly connected: boolean }>;
+}
+
+export interface AdminGameRooms {
+  readonly game: string;
+  readonly name: string;
+  readonly rooms: readonly AdminRoom[];
+  /** 连不上这个游戏的服务时的说明。 */
+  readonly error: string | null;
+}

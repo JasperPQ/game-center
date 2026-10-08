@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { priceFen, TRIAL_DAYS } from "../shared/pricing.js";
-import type { PublicAccount, PublicOrder } from "../shared/types.js";
+import type { AdminGameRooms, PublicAccount, PublicOrder } from "../shared/types.js";
 
 let serverUrl = "";
 let httpServer: typeof import("../server/index.js").httpServer;
@@ -454,6 +454,88 @@ describe("Game Center accounts and subscription", () => {
     } finally {
       delete process.env.WECHAT_TOKEN;
       delete process.env.WECHAT_TRIAL;
+    }
+  });
+
+  it("lets the admin delete an account: logged out at once, its WeChat can't claim again, the name is free", async () => {
+    process.env.WECHAT_TOKEN = wechatToken;
+    process.env.WECHAT_TRIAL = "on";
+    try {
+      const { cookie } = await registerUser("Doomed", "10.0.2.1");
+      const bind = await (await request("/api/wechat/bind-code", { cookie })).json() as { code: string };
+      expect(await sendWechatText("openid-doomed", bind.code)).toContain("领取成功");
+      expect((await checkAuth(cookie)).status).toBe(200);
+
+      expect((await request("/api/admin/delete-account", { method: "POST", body: { username: "Doomed" } })).status).toBe(401);
+      const deleted = await request("/api/admin/delete-account", { method: "POST", body: { username: "doomed" }, token: adminToken });
+      expect(deleted.status).toBe(200);
+      expect(((await deleted.json()) as { account: PublicAccount }).account.username).toBe("Doomed");
+      expect((await request("/api/admin/delete-account", { method: "POST", body: { username: "Doomed" }, token: adminToken })).status).toBe(400);
+
+      const me = await (await request("/api/me", { cookie })).json() as { user: PublicAccount | null };
+      expect(me.user).toBeNull();
+      const gate = await checkAuth(cookie);
+      expect(gate.status).toBe(302);
+      expect(gate.headers.get("location")).toContain("gate=login");
+      const accounts = await (await request("/api/admin/accounts", { token: adminToken })).json() as { accounts: PublicAccount[] };
+      expect(accounts.accounts.some((account) => account.username === "Doomed")).toBe(false);
+
+      // 删号再注册，不能拿同一个微信再领一次。
+      const again = await registerUser("Doomed", "10.0.2.2");
+      const code = await (await request("/api/wechat/bind-code", { cookie: again.cookie })).json() as { code: string };
+      expect(await sendWechatText("openid-doomed", code.code)).toContain("每个微信只能领一次");
+      const fresh = await (await request("/api/me", { cookie: again.cookie })).json() as { user: PublicAccount };
+      expect(fresh.user.subscribed).toBe(false);
+    } finally {
+      delete process.env.WECHAT_TOKEN;
+      delete process.env.WECHAT_TRIAL;
+    }
+  });
+
+  it("lists every game's rooms and force-closes one through the game server", async () => {
+    const { Server } = await import("socket.io");
+    const { createServer } = await import("node:http");
+    const { GAME_SERVERS } = await import("../server/rooms.js");
+    const rooms = [
+      { id: "ROOM01", status: "playing", capacity: 4, spectators: 1, players: [{ name: "甲", connected: true }, { name: "乙", connected: false }] },
+    ];
+    const dissolved: Array<{ roomId: string; token: string }> = [];
+    const fakeHttp = createServer();
+    const fake = new Server(fakeHttp);
+    fake.on("connection", (socket) => {
+      socket.on("lobby:get", (ack: (response: unknown) => void) => ack({ ok: true, data: rooms }));
+      socket.on("admin:dissolve", (payload: { roomId: string; token: string }, ack: (response: unknown) => void) => {
+        if (payload.token !== adminToken) return ack({ ok: false, error: "管理员口令不正确。" });
+        if (!rooms.some((room) => room.id === payload.roomId)) return ack({ ok: false, error: "这个房间已经不存在。" });
+        dissolved.push(payload);
+        rooms.splice(0, rooms.length);
+        ack({ ok: true, data: undefined });
+      });
+    });
+    await new Promise<void>((resolve) => fakeHttp.listen(0, "127.0.0.1", resolve));
+    const fakePort = (fakeHttp.address() as AddressInfo).port;
+    // 宝石商人指到假服务端，其他游戏指到没人监听的端口（马上连不上）。
+    process.env.GAME_SERVER_PORTS = GAME_SERVERS.map((game) => `${game.id}=${game.id === "gem" ? fakePort : 1}`).join(",");
+    try {
+      expect((await request("/api/admin/rooms")).status).toBe(401);
+      const listed = await (await request("/api/admin/rooms", { token: adminToken })).json() as { games: AdminGameRooms[] };
+      expect(listed.games).toHaveLength(GAME_SERVERS.length);
+      const gem = listed.games.find((game) => game.game === "gem")!;
+      expect(gem.error).toBeNull();
+      expect(gem.rooms).toEqual([rooms[0]]);
+      expect(listed.games.find((game) => game.game === "camel")!.error).toBeTruthy();
+
+      expect((await request("/api/admin/rooms/dissolve", { method: "POST", body: { game: "gem", roomId: "ROOM01" } })).status).toBe(401);
+      const closed = await request("/api/admin/rooms/dissolve", { method: "POST", body: { game: "gem", roomId: "ROOM01" }, token: adminToken });
+      expect(closed.status).toBe(200);
+      expect(dissolved).toEqual([{ roomId: "ROOM01", token: adminToken }]);
+      const gone = await request("/api/admin/rooms/dissolve", { method: "POST", body: { game: "gem", roomId: "ROOM01" }, token: adminToken });
+      expect(gone.status).toBe(400);
+      expect(((await gone.json()) as { error: string }).error).toContain("不存在");
+      expect((await request("/api/admin/rooms/dissolve", { method: "POST", body: { game: "nope", roomId: "X" }, token: adminToken })).status).toBe(400);
+    } finally {
+      delete process.env.GAME_SERVER_PORTS;
+      await new Promise<void>((resolve) => fake.close(() => resolve()));
     }
   });
 });

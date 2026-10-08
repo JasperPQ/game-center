@@ -1,4 +1,4 @@
-import type { PublicAccount, PublicOrder } from "../shared/types";
+import type { AdminGameRooms, PublicAccount, PublicOrder } from "../shared/types";
 
 export interface MeResponse {
   user: PublicAccount | null;
@@ -93,6 +93,18 @@ export const api = {
       ),
     orders: (token: string) =>
       request<{ orders: PublicOrder[] }>("/api/admin/orders", { headers: { "X-Admin-Token": token } }),
+    deleteAccount: (token: string, username: string) =>
+      request<{ account: PublicAccount }>(
+        "/api/admin/delete-account",
+        post("/api/admin/delete-account", { username }, { "X-Admin-Token": token }),
+      ),
+    rooms: (token: string) =>
+      request<{ games: AdminGameRooms[] }>("/api/admin/rooms", { headers: { "X-Admin-Token": token } }),
+    dissolveRoom: (token: string, game: string, roomId: string) =>
+      request<{ ok: boolean }>(
+        "/api/admin/rooms/dissolve",
+        post("/api/admin/rooms/dissolve", { game, roomId }, { "X-Admin-Token": token }),
+      ),
     markPaid: (token: string, id: string) =>
       request<{ order: PublicOrder }>(
         "/api/admin/orders/mark-paid",

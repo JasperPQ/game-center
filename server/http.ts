@@ -1,6 +1,7 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import {
   currentUser,
+  deleteAccount,
   destroySession,
   extendSubscription,
   generateCodes,
@@ -12,6 +13,7 @@ import {
   setLifetime,
 } from "./accounts.js";
 import { verifyAdminToken } from "./admin-token.js";
+import { dissolveGameRoom, listAllRooms } from "./rooms.js";
 import { readBody } from "./body.js";
 import { createOrder, findOrder, fulfilOrder, listOrders, toPublicOrder } from "./orders.js";
 import { activeProvider } from "./payments.js";
@@ -341,6 +343,36 @@ export async function handleApiRequest(request: IncomingMessage, response: Serve
         return true;
       }
       sendJson(response, 200, { account: result.account });
+      return true;
+    }
+
+    if (method === "POST" && path === "/api/admin/delete-account") {
+      if (!requireAdmin(request, response)) return true;
+      const body = await readBody(request) as { username?: unknown };
+      const result = deleteAccount(body.username);
+      if (!result.ok) {
+        sendJson(response, 400, { error: result.error });
+        return true;
+      }
+      sendJson(response, 200, { account: result.account });
+      return true;
+    }
+
+    if (method === "GET" && path === "/api/admin/rooms") {
+      if (!requireAdmin(request, response)) return true;
+      sendJson(response, 200, { games: await listAllRooms() });
+      return true;
+    }
+
+    if (method === "POST" && path === "/api/admin/rooms/dissolve") {
+      if (!requireAdmin(request, response)) return true;
+      const body = await readBody(request) as { game?: unknown; roomId?: unknown };
+      const result = await dissolveGameRoom(body.game, body.roomId);
+      if (!result.ok) {
+        sendJson(response, 400, { error: result.error });
+        return true;
+      }
+      sendJson(response, 200, { ok: true });
       return true;
     }
 

@@ -132,6 +132,13 @@ function loadAccounts(): AccountRecord[] {
     }));
 }
 
+/** 删掉的账号绑过的微信：留着记录，删号后同一个微信不能再领一次试用。 */
+function loadRetiredWechatOpenIds(): Set<string> {
+  const parsed = readJsonFile(accountsPath);
+  const stored = parsed && typeof parsed === "object" ? (parsed as { retiredWechatOpenIds?: unknown }).retiredWechatOpenIds : null;
+  return new Set(Array.isArray(stored) ? stored.filter((value): value is string => typeof value === "string") : []);
+}
+
 function loadCodes(): RedeemCodeRecord[] {
   const parsed = readJsonFile(codesPath);
   if (!parsed || typeof parsed !== "object" || !Array.isArray((parsed as { codes?: unknown }).codes)) {
@@ -163,11 +170,12 @@ function loadSessions(): Record<string, SessionRecord> {
 }
 
 let accounts = loadAccounts();
+let retiredWechatOpenIds = loadRetiredWechatOpenIds();
 let codes = loadCodes();
 let sessions = loadSessions();
 
 function saveAccounts(): void {
-  writeJsonAtomic(accountsPath, { accounts });
+  writeJsonAtomic(accountsPath, { accounts, retiredWechatOpenIds: [...retiredWechatOpenIds] });
 }
 
 function saveCodes(): void {
@@ -362,6 +370,7 @@ export function claimWechatTrial(username: string, openId: string): WechatTrialR
   if (!account) return { ok: false, reason: "missing" };
   const owner = accounts.find((candidate) => candidate.wechatOpenId === openId);
   if (owner) return { ok: false, reason: "wechat-used", boundTo: owner.username };
+  if (retiredWechatOpenIds.has(openId)) return { ok: false, reason: "wechat-used", boundTo: "（已删除的账号）" };
   if (account.trialClaimed) return { ok: false, reason: "claimed" };
   const now = Date.now();
   const base = account.expiresAt !== null && Date.parse(account.expiresAt) > now ? Date.parse(account.expiresAt) : now;
@@ -441,6 +450,31 @@ export function resetPassword(usernameValue: unknown, passwordValue: unknown): A
   account.passwordHash = hashPassword(password, account.salt);
   saveAccounts();
   return { ok: true, account: toPublicAccount(account) };
+}
+
+/**
+ * 管理员删除账号：账号和它的登录状态一起删掉，已经打开的网页下次请求就会回到登录。
+ * 订单记录保留（对账用）；绑过的微信记下来，不能再领一次试用。
+ */
+export function deleteAccount(usernameValue: unknown): AdminAccountResult {
+  const username = normalizeUsername(usernameValue);
+  if (!username) return { ok: false, error: "用户名不正确。" };
+  const account = findAccount(username);
+  if (!account) return { ok: false, error: "账号不存在。" };
+  const removed = toPublicAccount(account);
+  accounts = accounts.filter((candidate) => candidate !== account);
+  if (account.wechatOpenId) retiredWechatOpenIds.add(account.wechatOpenId);
+  saveAccounts();
+  const key = account.username.toLowerCase();
+  let loggedOut = false;
+  for (const [token, session] of Object.entries(sessions)) {
+    if (session.username.toLowerCase() === key) {
+      delete sessions[token];
+      loggedOut = true;
+    }
+  }
+  if (loggedOut) saveSessions();
+  return { ok: true, account: removed };
 }
 
 export function listAccounts(): PublicAccount[] {
