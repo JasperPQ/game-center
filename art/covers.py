@@ -78,6 +78,12 @@ COVERS = {
         "with only simple colored dots and green bamboo stick patterns arranged in neat rows and walls, a white "
         "porcelain gaiwan teacup with steam, a small dish of sunflower seeds, red paper lanterns glowing at the edges"
     ),
+    "doudizhu": (
+        "a low square wooden table in a northern Chinese farmhouse courtyard seen from directly above, three fanned hands of "
+        "face-down playing cards with red patterned backs, a small pile of face-down cards in the middle, a bowl of orange "
+        "persimmons, a teacup, strings of red chili peppers and golden corn cobs hanging on the grey brick wall at the top, "
+        "two red paper lanterns, warm evening light, no people"
+    ),
 }
 
 

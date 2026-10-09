@@ -18,6 +18,7 @@ import luckyCover from "./assets/pixel/covers/lucky.png";
 import flip7Cover from "./assets/pixel/covers/flip7.png";
 import seasaltCover from "./assets/pixel/covers/seasalt.png";
 import mahjongCover from "./assets/pixel/covers/mahjong.png";
+import doudizhuCover from "./assets/pixel/covers/doudizhu.png";
 import "./egg.css";
 import { ThemeToggle, useTheme } from "./theme";
 
@@ -117,6 +118,14 @@ const GAMES = [
     description: "麻将系列，进去先选玩法：四川麻将（换三张、定缺，血战到底 / 血流成河）或立直麻将（日本麻将：立直、宝牌、役和符，半庄 / 东风战）。人不够时机器人坐空座，一个人也能练手。",
     url: gameUrl("/mahjong/", 5185),
     cover: mahjongCover,
+  },
+  {
+    id: "doudizhu",
+    name: "斗地主",
+    tagline: "1–3 人 · 空座人机补位",
+    description: "叫地主、抢地主，地主多拿 3 张底牌，一个人打两个农民，谁先出完谁那一方赢。明牌、加倍、炸弹、王炸、春天都翻倍，还有记牌器。人不够时人机坐空座，一个人也能练手。",
+    url: gameUrl("/doudizhu/", 5186),
+    cover: doudizhuCover,
   },
 ] as const;
 
