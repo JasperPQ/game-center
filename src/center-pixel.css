@@ -150,9 +150,27 @@ body { background: repeating-conic-gradient(#13101a 0 25%, #0e0c13 0 50%) 0 0 / 
 
 /* 卡片封面：下沿一条木色像素边 */
 .app-shell .game-art {
+  position: relative;
   margin: var(--px);
   border-bottom: calc(var(--px) * 3) solid #6f4f37;
   background: repeating-conic-gradient(#1d3e31 0 25%, #1a3a2d 0 50%) 0 0 / 4px 4px;
+}
+
+/* 封面右上角的小标签（抢先体验的简洁版用） */
+.app-shell .game-card-badge {
+  position: absolute;
+  top: calc(var(--px) * 3);
+  right: calc(var(--px) * 3);
+  padding: 4px 10px;
+  color: #1b1424;
+  background: var(--gold);
+  font-size: 12px;
+  line-height: 1.5;
+  box-shadow:
+    0 calc(var(--px) * -1) 0 0 var(--edge),
+    0 var(--px) 0 0 var(--edge),
+    calc(var(--px) * -1) 0 0 0 var(--edge),
+    var(--px) 0 0 0 var(--edge);
 }
 
 /* ---------- 留言板 ---------- */

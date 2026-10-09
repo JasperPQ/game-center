@@ -31,7 +31,10 @@ function gameUrl(path: string, devPort: number): string {
 /** 晶脉不放卡片，只从标题旁的彩蛋进入。 */
 const JINGMAI_URL = gameUrl("/jingmai/", 5177);
 
-const GAMES = [
+/** 大厅里的一张游戏卡片。badge 是封面右上角的小标签：流水线先上线的简洁版写「抢先体验 · 美术制作中」，换上正式美术后去掉。 */
+type GameCard = { id: string; name: string; tagline: string; description: string; url: string; cover: string; badge?: string };
+
+const GAMES: readonly GameCard[] = [
   {
     id: "gem-merchant",
     name: "宝石商人",
@@ -136,7 +139,7 @@ const GAMES = [
     url: gameUrl("/kingdomino/", 5187),
     cover: kingdominoCover,
   },
-] as const;
+];
 
 // 网关拦下没订阅的访客时会带着 ?gate=login|expired|trial|kicked&next=<游戏路径> 回到大厅；付款页回来时带 ?order=<订单号>。
 const landingParams = new URLSearchParams(window.location.search);
@@ -312,6 +315,7 @@ function App() {
           >
             <div className="game-art game-cover" aria-hidden="true">
               <img src={game.cover} alt="" />
+              {game.badge && <span className="game-card-badge">{game.badge}</span>}
             </div>
             <div className="game-card-body">
               <span className="game-card-tagline">{game.tagline}</span>
