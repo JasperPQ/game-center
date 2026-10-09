@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { formatYuan, PLAN_MONTHS, PRICE_PER_MONTH_YUAN, priceFen, TRIAL_DAYS } from "../shared/pricing";
 import type { AdminGameRooms, AdminRoom, PublicAccount, PublicOrder } from "../shared/types";
 import { api, type PayConfigResponse, type WechatConfigResponse } from "./api";
+import { Letter } from "./Letter";
 
 const ORDER_POLL_MS = 3_000;
 const ORDER_POLL_LIMIT = 40;
@@ -93,7 +94,10 @@ export function Account({
       <div className="account-heading">
         <div>
           <div className="eyebrow"><span className="eyebrow-line" /> 会员订阅</div>
-          <h2 id="account-title">{user ? "你好，桌友。" : "登录后才能开桌。"}</h2>
+          <div className="account-title">
+            <h2 id="account-title">{user ? "你好，桌友。" : "登录后才能开桌。"}</h2>
+            <Letter />
+          </div>
           <p>
             {user
               ? `订阅有效期内，所有游戏都能进。${PRICE_PER_MONTH_YUAN} 元 / 月。`

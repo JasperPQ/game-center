@@ -1,0 +1,90 @@
+/*
+ * 「你好，桌友。」右边的信封和点开后的信纸。
+ * 信封是 50×34 的像素画，按 2 倍显示（手机也是 2 倍，标题旁边放得下）。
+ * 信纸是米色纸、深棕字，白天和夜间一样（像信封、彩蛋一样算内容色），所以这份样式不进 day-palette.ts。
+ * 字号只用 12 的整数倍：电脑 24px，窄屏 12px；横线间距等于行高，段落之间空一行，字始终压在线上。
+ */
+.account-title { display: flex; align-items: flex-end; gap: 16px; }
+.letter-envelope {
+  flex: none;
+  display: block;
+  /* 信封比标题高：底边和标题对齐，多出来的往上探进「会员订阅」右边的空白，标题区的高度和原来一样 */
+  margin: -40px 0 0;
+  padding: 4px;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  line-height: 0;
+}
+.letter-envelope img { display: block; width: 100px; height: 68px; image-rendering: pixelated; }
+/* 指上去时左右晃，和标题旁的彩蛋一样 */
+.letter-envelope:hover img,
+.letter-envelope:focus-visible img { animation: letter-envelope-shake 0.4s steps(1, end) infinite; }
+@keyframes letter-envelope-shake {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-2px); }
+  50% { transform: translateX(0); }
+  75% { transform: translateX(2px); }
+}
+
+/* ---------- 信纸 ---------- */
+.letter-dialog {
+  --line: 36px;
+  width: min(960px, calc(100vw - 32px));
+  max-width: none;
+  max-height: calc(100dvh - 32px);
+  padding: 0;
+  border: 0;
+  background: none;
+  overflow: visible;
+}
+.letter-dialog::backdrop { background: rgba(5, 4, 8, 0.78); }
+.letter-dialog[open] { animation: letter-rise 0.24s steps(4, end); }
+@keyframes letter-rise {
+  from { transform: translateY(24px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+.app-shell .letter-paper {
+  --edge: #050408;
+  --rim: #fffaea;
+  --shade: #c9b07a;
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - 32px);
+  color: #3b2a17;
+  background: #f4e7c5;
+  box-shadow:
+    0 calc(var(--px) * -1) 0 0 var(--edge),
+    0 var(--px) 0 0 var(--edge),
+    calc(var(--px) * -1) 0 0 0 var(--edge),
+    var(--px) 0 0 0 var(--edge),
+    inset var(--px) var(--px) 0 0 var(--rim),
+    inset calc(var(--px) * -1) calc(var(--px) * -1) 0 0 var(--shade);
+}
+.letter-body {
+  overflow-y: auto;
+  padding: var(--line) 48px 0;
+  font-size: 24px;
+  line-height: var(--line);
+  /* 横线跟着字一起滚动，画在每一行的底边 */
+  background: repeating-linear-gradient(to bottom, transparent 0 calc(var(--line) - 2px), #e0cc9c calc(var(--line) - 2px) var(--line)) 0 0 / 100% var(--line) local;
+  scrollbar-color: #c9b07a transparent;
+}
+.letter-paragraph { margin-bottom: var(--line); }
+.letter-signature { text-align: right; }
+.letter-actions { display: flex; justify-content: flex-end; padding: calc(var(--line) / 2) 48px calc(var(--line) / 2 + 4px); }
+.app-shell .letter-actions .quiet-button { font-size: 12px; }
+
+/* 矮一点的笔记本屏幕：字号不变，行距收紧一点，整封信一屏放下 */
+@media (min-width: 721px) and (max-height: 820px) {
+  .letter-dialog { --line: 30px; }
+}
+@media (max-width: 720px) {
+  .letter-dialog { --line: 24px; }
+  .letter-body { padding: var(--line) 18px 0; font-size: 12px; }
+  .letter-actions { padding: 12px 18px 14px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .letter-envelope img,
+  .letter-dialog[open] { animation: none !important; }
+}
