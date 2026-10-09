@@ -17,6 +17,7 @@ import cantstopCover from "./assets/pixel/covers/cantstop.png";
 import luckyCover from "./assets/pixel/covers/lucky.png";
 import flip7Cover from "./assets/pixel/covers/flip7.png";
 import seasaltCover from "./assets/pixel/covers/seasalt.png";
+import mahjongCover from "./assets/pixel/covers/mahjong.png";
 import "./egg.css";
 import { ThemeToggle, useTheme } from "./theme";
 
@@ -108,6 +109,14 @@ const GAMES = [
     description: "在海边收集卡牌、凑对子换效果：蟹翻弃牌堆、船再来一回合、鱼多摸一张、鲨鱼配泳者偷一张。卡牌分到 7 就能喊停，稳稳 STOP 还是赌一把「最后机会」？",
     url: gameUrl("/seasalt/", 5184),
     cover: seasaltCover,
+  },
+  {
+    id: "mahjong",
+    name: "麻将",
+    tagline: "1–4 人 · 空座机器人补位",
+    description: "麻将系列，进去先选玩法：四川麻将（换三张、定缺，血战到底 / 血流成河）已开放，立直麻将制作中。人不够时机器人坐空座，一个人也能练手。",
+    url: gameUrl("/mahjong/", 5185),
+    cover: mahjongCover,
   },
 ] as const;
 

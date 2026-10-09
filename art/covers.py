@@ -73,6 +73,11 @@ COVERS = {
         "cute sea creatures: a red crab, a small sailboat, a striped fish, a penguin and a seashell, turquoise waves "
         "with white foam along the top, a red and white lighthouse on rocks in the corner"
     ),
+    "mahjong": (
+        "a cozy Chengdu teahouse mahjong table seen from above, square green felt table top, ivory mahjong tiles "
+        "with only simple colored dots and green bamboo stick patterns arranged in neat rows and walls, a white "
+        "porcelain gaiwan teacup with steam, a small dish of sunflower seeds, red paper lanterns glowing at the edges"
+    ),
 }
 
 
