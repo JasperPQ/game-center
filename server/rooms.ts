@@ -82,3 +82,20 @@ export async function dissolveGameRoom(gameId: unknown, roomId: unknown): Promis
   const response = await call(game, "admin:dissolve", { roomId, token });
   return response.ok ? { ok: true } : { ok: false, error: response.error };
 }
+
+/**
+ * 某次登录被挤掉（或账号被删）时，通知所有游戏断开属于这次登录的连接。
+ * 游戏服务端从网关转来的 X-GC-Session 头知道每条连接属于哪次登录；被断开的页面会跳回大厅看提示。
+ * 不等结果：哪个游戏没在跑就跳过，那个游戏里本来也没有这次登录的连接。
+ */
+export function kickSessions(sessionIds: readonly string[]): void {
+  const token = process.env.ADMIN_TOKEN;
+  if (!token || sessionIds.length === 0) return;
+  for (const sessionId of sessionIds) {
+    void Promise.all(GAME_SERVERS.map((game) => call(game, "admin:kick-session", { sessionId, token })))
+      .then((results) => {
+        const kicked = results.reduce((sum, result) => sum + (result.ok && typeof result.data === "number" ? result.data : 0), 0);
+        console.log(`[session] 挤掉登录 ${sessionId.slice(0, 6)}…，断开 ${kicked} 个游戏连接`);
+      });
+  }
+}

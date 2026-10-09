@@ -111,7 +111,7 @@ const GAMES = [
   },
 ] as const;
 
-// 网关拦下没订阅的访客时会带着 ?gate=login|expired|trial&next=<游戏路径> 回到大厅；付款页回来时带 ?order=<订单号>。
+// 网关拦下没订阅的访客时会带着 ?gate=login|expired|trial|kicked&next=<游戏路径> 回到大厅；付款页回来时带 ?order=<订单号>。
 const landingParams = new URLSearchParams(window.location.search);
 const landingGate = landingParams.get("gate");
 // 没带订单号回来（比如从爱发电自己点回大厅）时，接着查上次跳去付款的那一单。
@@ -123,6 +123,7 @@ function gateNotice(gate: string | null): string {
   if (gate === "login") return "请先登录，登录后才能进入游戏。";
   if (gate === "expired") return "订阅已到期，续费后就能继续进入游戏。";
   if (gate === "trial") return "账号还没开通：关注公众号领试用，或者直接付款开通。";
+  if (gate === "kicked") return "这个账号在别的浏览器或设备上登录了，这里已经退出。每个账号同时登录的设备数有限，最早登录的会被挤掉；重新登录即可。";
   return "";
 }
 
@@ -141,7 +142,10 @@ function App() {
   const [accountNotice, setAccountNotice] = useState(() => gateNotice(landingGate));
 
   useEffect(() => {
-    api.me().then((response) => setUser(response.user)).catch(() => {});
+    api.me().then((response) => {
+      setUser(response.user);
+      if (response.kicked) setAccountNotice(gateNotice("kicked"));
+    }).catch(() => {});
     // 读完就把参数从地址栏去掉，刷新时不再重复提示。
     if (landingParams.has("gate") || landingParams.has("order")) {
       window.history.replaceState(null, "", window.location.pathname);
@@ -159,6 +163,26 @@ function App() {
     setAccountNotice(gateNotice(!user ? "login" : user.trialClaimed || user.paid ? "expired" : "trial"));
     scrollToAccount();
   }
+
+  // 停在大厅的窗口也要知道自己被挤掉了：隔一会儿、以及切回这个标签页时查一次登录状态。
+  useEffect(() => {
+    if (!user) return;
+    function check() {
+      api.me().then((response) => {
+        if (response.user) return;
+        setUser(null);
+        setAccountNotice(gateNotice(response.kicked ? "kicked" : "login"));
+        scrollToAccount();
+      }).catch(() => {});
+    }
+    const timer = window.setInterval(check, 30_000);
+    const onVisible = () => { if (document.visibilityState === "visible") check(); };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [user]);
 
   function handleUserChange(next: PublicAccount | null) {
     setUser(next);

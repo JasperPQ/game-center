@@ -619,6 +619,27 @@ function AccountAdmin() {
       });
   }
 
+  function changeMaxSessions(account: PublicAccount) {
+    const input = window.prompt(
+      `「${account.username}」最多同时在几个浏览器/设备上登录？（1–20，现在是 ${account.maxSessions}，默认 2）\n调低后，超出的最早登录会被立刻挤掉。`,
+      String(account.maxSessions),
+    );
+    if (input === null) return;
+    const max = Number(input.trim());
+    setBusy(true);
+    setError("");
+    setNotice("");
+    api.admin.maxSessions(token, account.username, max)
+      .then((response) => {
+        setNotice(`「${account.username}」现在最多同时登录 ${response.account.maxSessions} 个。`);
+        loadAccounts(token);
+      })
+      .catch((reason: unknown) => {
+        setBusy(false);
+        setError(reason instanceof Error ? reason.message : "修改失败。");
+      });
+  }
+
   function deleteAccount(account: PublicAccount) {
     const paidNote = account.lifetime ? "这是永久会员账号，" : account.subscribed && !account.trial ? `这个账号还有 ${account.daysLeft} 天付费时长，` : "";
     if (!window.confirm(`删除账号「${account.username}」？${paidNote}删除后不能恢复，这个人会被退出登录，用户名可以被重新注册。`)) return;
@@ -810,6 +831,7 @@ function AccountAdmin() {
                 <th>注册时间</th>
                 <th>订阅到期</th>
                 <th>状态</th>
+                <th>同时登录</th>
                 <th>操作</th>
               </tr>
             </thead>
@@ -824,6 +846,12 @@ function AccountAdmin() {
                       : account.subscribed ? `${account.trial ? "试用" : "有效"} · ${account.daysLeft} 天`
                       : account.trialClaimed || account.paid ? "已到期" : "未开通"}
                     {account.wechatBound && " · 微信"}
+                  </td>
+                  <td>
+                    {account.activeSessions} / {account.maxSessions}{" "}
+                    <button className="account-admin-button" type="button" disabled={busy} onClick={() => changeMaxSessions(account)}>
+                      改上限
+                    </button>
                   </td>
                   <td className="account-admin-actions">
                     <button className="account-admin-button" type="button" disabled={busy} onClick={() => extend(account.username)}>

@@ -538,4 +538,81 @@ describe("Game Center accounts and subscription", () => {
       await new Promise<void>((resolve) => fake.close(() => resolve()));
     }
   });
+
+  it("limits how many browsers an account can stay logged in on, kicking the oldest one out of the games", async () => {
+    const { Server } = await import("socket.io");
+    const { createServer } = await import("node:http");
+    const { GAME_SERVERS } = await import("../server/rooms.js");
+    const kicks: string[] = [];
+    const fakeHttp = createServer();
+    const fake = new Server(fakeHttp);
+    fake.on("connection", (socket) => {
+      socket.on("admin:kick-session", (payload: { sessionId: string; token: string }, ack: (response: unknown) => void) => {
+        if (payload.token !== adminToken) return ack({ ok: false, error: "管理员口令不正确。" });
+        kicks.push(payload.sessionId);
+        ack({ ok: true, data: 1 });
+      });
+    });
+    await new Promise<void>((resolve) => fakeHttp.listen(0, "127.0.0.1", resolve));
+    const fakePort = (fakeHttp.address() as AddressInfo).port;
+    process.env.GAME_SERVER_PORTS = GAME_SERVERS.map((game) => `${game.id}=${game.id === "gem" ? fakePort : 1}`).join(",");
+    const login = async (cookie: string | null = null) => {
+      const response = await request("/api/login", { method: "POST", body: { username: "Juggler", password: "secret12" }, cookie });
+      expect(response.status).toBe(200);
+      return sessionCookie(response)!;
+    };
+    const sessionIdOf = async (cookie: string) => {
+      const ok = await checkAuth(cookie);
+      expect(ok.status).toBe(200);
+      return ok.headers.get("x-gc-session")!;
+    };
+    const waitForKicks = async (count: number) => {
+      for (let i = 0; i < 50 && kicks.length < count; i++) await new Promise((resolve) => setTimeout(resolve, 20));
+    };
+    try {
+      const first = (await registerUser("Juggler", "10.0.3.1")).cookie;
+      const firstId = await sessionIdOf(first);
+      expect(firstId).toMatch(/^[0-9a-f]{16}$/);
+      const second = await login();
+      // 同一个浏览器再登录一次：替换自己原来的登录，不挤别人。
+      const secondAgain = await login(second);
+      expect((await request("/api/me", { cookie: first })).status).toBe(200);
+      expect(((await (await request("/api/me", { cookie: first })).json()) as { user: PublicAccount | null }).user?.activeSessions).toBe(2);
+      expect(kicks).toEqual([]);
+
+      // 第三个浏览器：最早的 first 被挤掉，游戏收到它的编号。
+      const third = await login();
+      const me = await (await request("/api/me", { cookie: first })).json() as { user: PublicAccount | null; kicked: boolean };
+      expect(me.user).toBeNull();
+      expect(me.kicked).toBe(true);
+      const gate = await checkAuth(first);
+      expect(gate.status).toBe(302);
+      expect(gate.headers.get("location")).toContain("gate=kicked");
+      await waitForKicks(1);
+      expect(kicks).toEqual([firstId]);
+      expect((await checkAuth(secondAgain)).status).toBe(200);
+      expect((await checkAuth(third)).status).toBe(200);
+
+      // 管理员给这个号放宽到 3 个：再登录不挤。
+      expect((await request("/api/admin/max-sessions", { method: "POST", body: { username: "Juggler", max: 3 } })).status).toBe(401);
+      expect((await request("/api/admin/max-sessions", { method: "POST", body: { username: "Juggler", max: 0 }, token: adminToken })).status).toBe(400);
+      const raised = await request("/api/admin/max-sessions", { method: "POST", body: { username: "Juggler", max: 3 }, token: adminToken });
+      expect(((await raised.json()) as { account: PublicAccount }).account.maxSessions).toBe(3);
+      const fourth = await login();
+      for (const cookie of [secondAgain, third, fourth]) expect((await checkAuth(cookie)).status).toBe(200);
+
+      // 调回 1 个：立刻只留最新的。
+      const secondId = await sessionIdOf(secondAgain);
+      const thirdId = await sessionIdOf(third);
+      const lowered = await request("/api/admin/max-sessions", { method: "POST", body: { username: "Juggler", max: 1 }, token: adminToken });
+      expect(((await lowered.json()) as { account: PublicAccount }).account.activeSessions).toBe(1);
+      expect((await checkAuth(fourth)).status).toBe(200);
+      expect((await checkAuth(secondAgain)).headers.get("location")).toContain("gate=kicked");
+      await waitForKicks(3);
+      expect(kicks.slice(1).sort()).toEqual([secondId, thirdId].sort());
+    } finally {
+      delete process.env.GAME_SERVER_PORTS;
+      await new Promise<void>((resolve) => fake.close(() => resolve()));
+    }
+  });
 });

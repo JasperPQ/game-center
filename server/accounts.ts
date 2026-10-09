@@ -14,6 +14,11 @@ const CODES_MAX = 100;
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+/** 一个账号默认最多同时在几个浏览器/设备上登录；管理员可以给单个账号改（以后按付费档位给不同的数）。 */
+export const DEFAULT_MAX_SESSIONS = 2;
+export const MAX_SESSIONS_LIMIT = 20;
+/** 被挤掉的登录记多久（这段时间里那个浏览器能看到「账号在别处登录」，之后就当普通的未登录）。 */
+const KICKED_MEMORY_MS = 7 * DAY_MS;
 
 /** 账号的完整记录（含密码，只留在服务端，绝不发给前端）。 */
 export interface AccountRecord {
@@ -31,6 +36,8 @@ export interface AccountRecord {
   wechatOpenId: string | null;
   /** 领过试用没有。老账号注册时就送了试用，读进来一律算领过。 */
   trialClaimed: boolean;
+  /** 最多同时登录几个浏览器/设备；null 用默认值 DEFAULT_MAX_SESSIONS。 */
+  maxSessions: number | null;
 }
 
 export interface RedeemCodeRecord {
@@ -45,12 +52,15 @@ export interface RedeemCodeRecord {
 }
 
 interface SessionRecord {
+  /** 对外的登录编号（不是登录凭证）：网关转给游戏服务端，挤掉这次登录时按它断开游戏连接。 */
+  id: string;
   username: string;
   createdAt: string;
 }
 
 export type AccountResult =
-  | { ok: true; token: string; user: PublicAccount }
+  /** evicted：超出同时登录上限被挤掉的登录编号，要通知各游戏断开。 */
+  | { ok: true; token: string; user: PublicAccount; evicted: string[] }
   | { ok: false; error: string };
 
 export type AccountMutationResult =
@@ -62,7 +72,8 @@ export type WechatTrialResult =
   | { ok: false; reason: "missing" | "claimed" | "wechat-used"; boundTo?: string };
 
 export type AdminAccountResult =
-  | { ok: true; account: PublicAccount }
+  /** evicted：因为这次操作要断开的登录编号（删号、调低上限时）。 */
+  | { ok: true; account: PublicAccount; evicted?: string[] }
   | { ok: false; error: string };
 
 export type AdminCodesResult =
@@ -92,8 +103,8 @@ function writeJsonAtomic(path: string, value: unknown): void {
   renameSync(temporaryPath, path);
 }
 
-type StoredAccount = Omit<AccountRecord, "paid" | "lifetime" | "wechatOpenId" | "trialClaimed">
-  & { paid?: boolean; lifetime?: boolean; wechatOpenId?: string | null; trialClaimed?: boolean };
+type StoredAccount = Omit<AccountRecord, "paid" | "lifetime" | "wechatOpenId" | "trialClaimed" | "maxSessions">
+  & { paid?: boolean; lifetime?: boolean; wechatOpenId?: string | null; trialClaimed?: boolean; maxSessions?: number | null };
 
 function isAccountRecord(value: unknown): value is StoredAccount {
   if (!value || typeof value !== "object") return false;
@@ -129,6 +140,7 @@ function loadAccounts(): AccountRecord[] {
       lifetime: account.lifetime === true,
       wechatOpenId: typeof account.wechatOpenId === "string" ? account.wechatOpenId : null,
       trialClaimed: account.trialClaimed !== false,
+      maxSessions: typeof account.maxSessions === "number" ? account.maxSessions : null,
     }));
 }
 
@@ -163,7 +175,9 @@ function loadSessions(): Record<string, SessionRecord> {
     if (!value || typeof value !== "object") continue;
     const record = value as Record<string, unknown>;
     if (typeof record.username !== "string" || typeof record.createdAt !== "string") continue;
-    const session = { username: record.username, createdAt: record.createdAt };
+    // 老会话没有编号，读进来补一个。
+    const id = typeof record.id === "string" && record.id ? record.id : randomBytes(8).toString("hex");
+    const session = { id, username: record.username, createdAt: record.createdAt };
     if (!isSessionExpired(session)) result[token] = session;
   }
   return result;
@@ -173,6 +187,11 @@ let accounts = loadAccounts();
 let retiredWechatOpenIds = loadRetiredWechatOpenIds();
 let codes = loadCodes();
 let sessions = loadSessions();
+// 老会话读进来时补了编号：马上存下来，重启后编号不变（游戏服务端按编号记连接）。
+if (Object.keys(sessions).length > 0 && readJsonFile(sessionsPath) !== null) {
+  const stored = (readJsonFile(sessionsPath) as { sessions?: Record<string, { id?: unknown }> }).sessions ?? {};
+  if (Object.keys(sessions).some((token) => typeof stored[token]?.id !== "string")) saveSessions();
+}
 
 function saveAccounts(): void {
   writeJsonAtomic(accountsPath, { accounts, retiredWechatOpenIds: [...retiredWechatOpenIds] });
@@ -258,6 +277,8 @@ function toPublicAccount(account: AccountRecord): PublicAccount {
     lastLoginAt: account.lastLoginAt,
     wechatBound: account.wechatOpenId !== null,
     trialClaimed: account.trialClaimed,
+    maxSessions: sessionLimit(account),
+    activeSessions: sessionsOf(account.username).length,
   };
 }
 
@@ -271,11 +292,47 @@ function extendAccount(account: AccountRecord, months: number): void {
   account.paid = true;
 }
 
-function createSession(username: string): string {
-  const token = randomBytes(32).toString("base64url");
-  sessions[token] = { username, createdAt: new Date().toISOString() };
+function sessionLimit(account: AccountRecord): number {
+  return account.maxSessions ?? DEFAULT_MAX_SESSIONS;
+}
+
+/** 这个账号现在有效的登录，按登录时间从早到晚。 */
+function sessionsOf(username: string): Array<[string, SessionRecord]> {
+  const key = username.toLowerCase();
+  return Object.entries(sessions)
+    .filter(([, session]) => session.username.toLowerCase() === key && !isSessionExpired(session))
+    .sort(([, a], [, b]) => a.createdAt.localeCompare(b.createdAt));
+}
+
+/** 被挤掉的登录凭证 → 被挤掉的时间（只放内存）。 */
+const kickedTokens = new Map<string, number>();
+
+/** 超出上限时从最早的登录开始挤掉，返回被挤掉的登录编号。 */
+function evictExtraSessions(account: AccountRecord): string[] {
+  const active = sessionsOf(account.username);
+  const extra = active.length - sessionLimit(account);
+  if (extra <= 0) return [];
+  const now = Date.now();
+  for (const [token, kickedAt] of kickedTokens) {
+    if (now - kickedAt > KICKED_MEMORY_MS) kickedTokens.delete(token);
+  }
+  const evicted: string[] = [];
+  for (const [token, session] of active.slice(0, extra)) {
+    delete sessions[token];
+    kickedTokens.set(token, now);
+    evicted.push(session.id);
+  }
   saveSessions();
-  return token;
+  return evicted;
+}
+
+/** replaceToken：这个浏览器原来的登录，先作废，免得同一个浏览器重新登录也多占一个名额、挤掉别的设备。 */
+function createSession(account: AccountRecord, replaceToken: string | null = null): { token: string; evicted: string[] } {
+  if (replaceToken) delete sessions[replaceToken];
+  const token = randomBytes(32).toString("base64url");
+  sessions[token] = { id: randomBytes(8).toString("hex"), username: account.username, createdAt: new Date().toISOString() };
+  saveSessions();
+  return { token, evicted: evictExtraSessions(account) };
 }
 
 export function destroySession(token: string | null): void {
@@ -283,6 +340,15 @@ export function destroySession(token: string | null): void {
     delete sessions[token];
     saveSessions();
   }
+}
+
+/**
+ * 当前请求的登录情况：账号、这次登录的编号，以及没登录是不是因为被别处的登录挤掉了。
+ */
+export function sessionInfo(token: string | null): { user: PublicAccount | null; sessionId: string | null; kicked: boolean } {
+  const user = currentUser(token);
+  if (user && token) return { user, sessionId: sessions[token]?.id ?? null, kicked: false };
+  return { user: null, sessionId: null, kicked: token !== null && kickedTokens.has(token) };
 }
 
 /** 用会话 token 拿到当前账号，token 无效、过期或账号不存在时返回 null。 */
@@ -300,7 +366,7 @@ export function currentUser(token: string | null): PublicAccount | null {
 }
 
 /** withTrial 为 false 时（公众号领试用模式）新账号不带试用，要绑定微信后才送。 */
-export function register(usernameValue: unknown, passwordValue: unknown, withTrial = true): AccountResult {
+export function register(usernameValue: unknown, passwordValue: unknown, withTrial = true, replaceToken: string | null = null): AccountResult {
   const username = normalizeUsername(usernameValue);
   if (!username) {
     return { ok: false, error: `用户名需为 ${USERNAME_MIN}–${USERNAME_MAX} 个字符，只能含字母、数字、下划线和横线。` };
@@ -325,14 +391,15 @@ export function register(usernameValue: unknown, passwordValue: unknown, withTri
     lifetime: false,
     wechatOpenId: null,
     trialClaimed: withTrial,
+    maxSessions: null,
   };
   accounts = [...accounts, account];
   saveAccounts();
-  const token = createSession(username);
-  return { ok: true, token, user: toPublicAccount(account) };
+  const { token, evicted } = createSession(account, replaceToken);
+  return { ok: true, token, user: toPublicAccount(account), evicted };
 }
 
-export function login(usernameValue: unknown, passwordValue: unknown): AccountResult {
+export function login(usernameValue: unknown, passwordValue: unknown, replaceToken: string | null = null): AccountResult {
   const username = normalizeUsername(usernameValue);
   const password = typeof passwordValue === "string" ? passwordValue : "";
   const account = username ? findAccount(username) : undefined;
@@ -341,8 +408,8 @@ export function login(usernameValue: unknown, passwordValue: unknown): AccountRe
   }
   account.lastLoginAt = new Date().toISOString();
   saveAccounts();
-  const token = createSession(account.username);
-  return { ok: true, token, user: toPublicAccount(account) };
+  const { token, evicted } = createSession(account, replaceToken);
+  return { ok: true, token, user: toPublicAccount(account), evicted };
 }
 
 export function redeem(username: string, codeValue: unknown): AccountMutationResult {
@@ -466,15 +533,30 @@ export function deleteAccount(usernameValue: unknown): AdminAccountResult {
   if (account.wechatOpenId) retiredWechatOpenIds.add(account.wechatOpenId);
   saveAccounts();
   const key = account.username.toLowerCase();
-  let loggedOut = false;
+  const evicted: string[] = [];
   for (const [token, session] of Object.entries(sessions)) {
     if (session.username.toLowerCase() === key) {
       delete sessions[token];
-      loggedOut = true;
+      evicted.push(session.id);
     }
   }
-  if (loggedOut) saveSessions();
-  return { ok: true, account: removed };
+  if (evicted.length > 0) saveSessions();
+  return { ok: true, account: removed, evicted };
+}
+
+/** 管理员改单个账号的同时登录上限；调低时立刻挤掉多出来的最早的登录。 */
+export function setMaxSessions(usernameValue: unknown, maxValue: unknown): AdminAccountResult {
+  const username = normalizeUsername(usernameValue);
+  if (!username) return { ok: false, error: "用户名不正确。" };
+  if (typeof maxValue !== "number" || !Number.isInteger(maxValue) || maxValue < 1 || maxValue > MAX_SESSIONS_LIMIT) {
+    return { ok: false, error: `同时登录数需为 1–${MAX_SESSIONS_LIMIT} 的整数。` };
+  }
+  const account = findAccount(username);
+  if (!account) return { ok: false, error: "账号不存在。" };
+  account.maxSessions = maxValue === DEFAULT_MAX_SESSIONS ? null : maxValue;
+  saveAccounts();
+  const evicted = evictExtraSessions(account);
+  return { ok: true, account: toPublicAccount(account), evicted };
 }
 
 export function listAccounts(): PublicAccount[] {

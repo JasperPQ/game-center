@@ -2,6 +2,8 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import {
   currentUser,
   deleteAccount,
+  sessionInfo,
+  setMaxSessions,
   destroySession,
   extendSubscription,
   generateCodes,
@@ -13,7 +15,7 @@ import {
   setLifetime,
 } from "./accounts.js";
 import { verifyAdminToken } from "./admin-token.js";
-import { dissolveGameRoom, listAllRooms } from "./rooms.js";
+import { dissolveGameRoom, kickSessions, listAllRooms } from "./rooms.js";
 import { readBody } from "./body.js";
 import { createOrder, findOrder, fulfilOrder, listOrders, toPublicOrder } from "./orders.js";
 import { activeProvider } from "./payments.js";
@@ -81,9 +83,10 @@ function requireAdmin(request: IncomingMessage, response: ServerResponse): boole
  * 其他请求（socket.io、图片等）直接 401。
  */
 function handleAuthCheck(request: IncomingMessage, response: ServerResponse): void {
-  const user = currentUser(sessionToken(request));
+  const { user, sessionId, kicked } = sessionInfo(sessionToken(request));
   if (user && user.subscribed) {
-    response.writeHead(200, { "cache-control": "no-store" });
+    // 网关（copy_headers）把登录编号转给游戏服务端，挤掉这次登录时游戏按它断开连接。
+    response.writeHead(200, { "cache-control": "no-store", "x-gc-session": sessionId ?? "" });
     response.end("ok");
     return;
   }
@@ -95,7 +98,7 @@ function handleAuthCheck(request: IncomingMessage, response: ServerResponse): vo
     return;
   }
   // 从没开通过（公众号领试用模式下注册、还没领）的账号单独提示去领试用。
-  const params = new URLSearchParams({ gate: !user ? "login" : user.trialClaimed || user.paid ? "expired" : "trial" });
+  const params = new URLSearchParams({ gate: !user ? (kicked ? "kicked" : "login") : user.trialClaimed || user.paid ? "expired" : "trial" });
   const game = typeof originalUri === "string" ? /^\/([a-z0-9-]+)\//.exec(originalUri)?.[1] : undefined;
   if (game) params.set("next", game);
   response.writeHead(302, { location: `/?${params.toString()}`, "cache-control": "no-store" });
@@ -111,7 +114,8 @@ export async function handleApiRequest(request: IncomingMessage, response: Serve
 
   try {
     if (method === "GET" && path === "/api/me") {
-      sendJson(response, 200, { user: currentUser(sessionToken(request)) });
+      const { user, kicked } = sessionInfo(sessionToken(request));
+      sendJson(response, 200, { user, kicked });
       return true;
     }
 
@@ -127,12 +131,13 @@ export async function handleApiRequest(request: IncomingMessage, response: Serve
         return true;
       }
       const body = await readBody(request) as { username?: unknown; password?: unknown };
-      const result = register(body.username, body.password, !wechatTrialEnabled());
+      const result = register(body.username, body.password, !wechatTrialEnabled(), sessionToken(request));
       if (!result.ok) {
         sendJson(response, 400, { error: result.error });
         return true;
       }
       registerLimiter.hit(ip);
+      kickSessions(result.evicted);
       setSessionCookie(request, response, result.token);
       sendJson(response, 200, { user: result.user });
       return true;
@@ -146,7 +151,8 @@ export async function handleApiRequest(request: IncomingMessage, response: Serve
         sendJson(response, 429, { error: "密码输错次数太多，请 15 分钟后再试。" });
         return true;
       }
-      const result = login(body.username, body.password);
+      const result = login(body.username, body.password, sessionToken(request));
+      if (result.ok) kickSessions(result.evicted);
       if (!result.ok) {
         loginFailureLimiter.hit(ipKey);
         loginFailureLimiter.hit(userKey);
@@ -354,6 +360,20 @@ export async function handleApiRequest(request: IncomingMessage, response: Serve
         sendJson(response, 400, { error: result.error });
         return true;
       }
+      kickSessions(result.evicted ?? []);
+      sendJson(response, 200, { account: result.account });
+      return true;
+    }
+
+    if (method === "POST" && path === "/api/admin/max-sessions") {
+      if (!requireAdmin(request, response)) return true;
+      const body = await readBody(request) as { username?: unknown; max?: unknown };
+      const result = setMaxSessions(body.username, body.max);
+      if (!result.ok) {
+        sendJson(response, 400, { error: result.error });
+        return true;
+      }
+      kickSessions(result.evicted ?? []);
       sendJson(response, 200, { account: result.account });
       return true;
     }

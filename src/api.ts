@@ -2,6 +2,8 @@ import type { AdminGameRooms, PublicAccount, PublicOrder } from "../shared/types
 
 export interface MeResponse {
   user: PublicAccount | null;
+  /** 没登录是因为这次登录被同一账号在别的浏览器/设备上的新登录挤掉了。 */
+  kicked?: boolean;
 }
 export interface AuthResponse {
   user: PublicAccount;
@@ -97,6 +99,11 @@ export const api = {
       request<{ account: PublicAccount }>(
         "/api/admin/delete-account",
         post("/api/admin/delete-account", { username }, { "X-Admin-Token": token }),
+      ),
+    maxSessions: (token: string, username: string, max: number) =>
+      request<{ account: PublicAccount }>(
+        "/api/admin/max-sessions",
+        post("/api/admin/max-sessions", { username, max }, { "X-Admin-Token": token }),
       ),
     rooms: (token: string) =>
       request<{ games: AdminGameRooms[] }>("/api/admin/rooms", { headers: { "X-Admin-Token": token } }),

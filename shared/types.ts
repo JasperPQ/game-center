@@ -47,6 +47,10 @@ export interface PublicAccount {
   readonly wechatBound: boolean;
   /** 领过试用（注册送的或公众号领的）；没领过的可以去公众号领。 */
   readonly trialClaimed: boolean;
+  /** 最多同时登录几个浏览器/设备。 */
+  readonly maxSessions: number;
+  /** 现在登录着的浏览器/设备数。 */
+  readonly activeSessions: number;
 }
 
 /** 订单（给前端和管理页看的部分）。金额单位是分。 */
