@@ -84,6 +84,13 @@ COVERS = {
         "persimmons, a teacup, strings of red chili peppers and golden corn cobs hanging on the grey brick wall at the top, "
         "two red paper lanterns, warm evening light, no people"
     ),
+    "kingdomino": (
+        "a small medieval kingdom seen from above on a wooden table, built from square terrain tiles laid in a 5 by 5 grid: "
+        "golden wheat fields, dark green pine forests, blue lakes with lily pads, bright green meadows with white sheep, "
+        "olive swamps with cattails and grey rocky mountains with tiny mine entrances, a little stone castle with a pink "
+        "roof in the center, a few loose domino tiles and a small king figurine with a golden crown beside the grid, "
+        "warm afternoon sunlight, no people"
+    ),
 }
 
 

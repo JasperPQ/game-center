@@ -19,6 +19,7 @@ import flip7Cover from "./assets/pixel/covers/flip7.png";
 import seasaltCover from "./assets/pixel/covers/seasalt.png";
 import mahjongCover from "./assets/pixel/covers/mahjong.png";
 import doudizhuCover from "./assets/pixel/covers/doudizhu.png";
+import kingdominoCover from "./assets/pixel/covers/kingdomino.png";
 import "./egg.css";
 import { ThemeToggle, useTheme } from "./theme";
 
@@ -126,6 +127,14 @@ const GAMES = [
     description: "叫地主、抢地主，地主多拿 3 张底牌，一个人打两个农民，谁先出完谁那一方赢。明牌、加倍、炸弹、王炸、春天都翻倍，还有记牌器。人不够时人机坐空座，一个人也能练手。",
     url: gameUrl("/doudizhu/", 5186),
     cover: doudizhuCover,
+  },
+  {
+    id: "kingdomino",
+    name: "多米诺王国",
+    tagline: "2–4 人 · 可加人机",
+    description: "每人从一座城堡起步，轮流挑骨牌拼进自己的王国：麦田、森林、湖泊、草地、沼泽、矿山。同种地形连成一片，格数 × 皇冠就是这片的分；挑大号骨牌皇冠多，下一轮就得排在后面。",
+    url: gameUrl("/kingdomino/", 5187),
+    cover: kingdominoCover,
   },
 ] as const;
 

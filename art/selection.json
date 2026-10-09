@@ -1,7 +1,7 @@
 {
   "_说明": "首页晶脉入口用哪颗彩蛋（art/out/ 下的路径）。2026-10-07 他在画廊里选了晶洞蛋 geode-c2（也是我推荐的）。改完运行 python export.py。",
   "egg": "egg/geode-c2.png",
-  "_covers说明": "大厅卡片封面（art/out/covers/ 下的文件名）。2026-10-07 每个游戏出 2–3 张候选挑的：没有乱码文字的那张。python covers.py export 只是复制；宝石商人和掼蛋的原图上下有几行黑边，导出后又手动裁掉了。 麻将（2026-10-09）：s813 裁掉上下黑边（12 行 / 9 行）；s812 牌上有乱码字母，没用。",
+  "_covers说明": "大厅卡片封面（art/out/covers/ 下的文件名）。2026-10-07 每个游戏出 2–3 张候选挑的：没有乱码文字的那张。python covers.py export 只是复制；宝石商人和掼蛋的原图上下有几行黑边，导出后又手动裁掉了。 麻将（2026-10-09）：s813 裁掉上下黑边（12 行 / 9 行）；s812 牌上有乱码字母，没用。 多米诺王国（2026-10-09）：s813（地形格拼成的王国、城堡在正中，没有字和黑边）；s812 粉尖顶城堡有点像马里奥的桃花公主城堡，没用。",
   "covers": {
     "gem-merchant": "gem-merchant-s822.png",
     "guandan": "guandan-s811.png",
@@ -14,6 +14,7 @@
     "flip7": "flip7-s812.png",
     "seasalt": "seasalt-s812-clean.png",
     "mahjong": "mahjong-s813-crop.png",
-    "doudizhu": "doudizhu-s812-crop.png"
+    "doudizhu": "doudizhu-s812-crop.png",
+    "kingdomino": "kingdomino-s813.png"
   }
 }

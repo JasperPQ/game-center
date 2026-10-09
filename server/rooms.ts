@@ -20,6 +20,7 @@ export const GAME_SERVERS: ReadonlyArray<{ id: string; name: string; port: numbe
   { id: "seasalt", name: "海盐与纸", port: 3011 },
   { id: "mahjong", name: "麻将", port: 3012 },
   { id: "doudizhu", name: "斗地主", port: 3013 },
+  { id: "kingdomino", name: "多米诺王国", port: 3014 },
 ];
 
 const TIMEOUT_MS = 4000;

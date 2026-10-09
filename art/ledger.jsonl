@@ -64,3 +64,6 @@
 {"time": "2026-10-09 10:26:45", "name": "doudizhu-s811", "endpoint": "/create-image-pixflux", "usage": {"type": "usd", "usd": 0.007343736118740505}, "seconds": 24.9}
 {"time": "2026-10-09 10:27:31", "name": "doudizhu-s812", "endpoint": "/create-image-pixflux", "usage": {"type": "usd", "usd": 0.0076010756227705215}, "seconds": 46.4}
 {"time": "2026-10-09 10:28:20", "name": "doudizhu-s813", "endpoint": "/create-image-pixflux", "usage": {"type": "usd", "usd": 0.007728235695097181}, "seconds": 48.6}
+{"time": "2026-10-09 14:39:23", "name": "kingdomino-s811", "endpoint": "/create-image-pixflux", "usage": {"type": "usd", "usd": 0.007955993466907077}, "seconds": 32.7}
+{"time": "2026-10-09 14:39:49", "name": "kingdomino-s812", "endpoint": "/create-image-pixflux", "usage": {"type": "usd", "usd": 0.007212346659766304}, "seconds": 25.7}
+{"time": "2026-10-09 14:40:51", "name": "kingdomino-s813", "endpoint": "/create-image-pixflux", "usage": {"type": "usd", "usd": 0.009454908079571195}, "seconds": 61.6}
