@@ -23,6 +23,7 @@ import kingdominoCover from "./assets/pixel/covers/kingdomino.png";
 import niutouCover from "./assets/pixel/covers/niutou.png";
 import wondersCover from "./assets/pixel/covers/wonders.png";
 import loveletterCover from "./assets/pixel/covers/loveletter.png";
+import skullCover from "./assets/pixel/covers/skull.png";
 import "./egg.css";
 import { ThemeToggle, useTheme } from "./theme";
 
@@ -165,6 +166,14 @@ const GAMES: readonly GameCard[] = [
     description: "整副只有 21 张宫廷角色牌，每人手里只握 1 张。轮到你先摸一张，再从两张里打出一张：卫兵猜别人的牌，牧师偷看，男爵比大小，王子逼人弃牌……被猜中、比输或者丢掉了公主就出局。撑到最后、或者牌堆抽完时点数最大，就收下一枚钟情标记，先攒够的人赢。",
     url: gameUrl("/loveletter/", 5190),
     cover: loveletterCover,
+  },
+  {
+    id: "skull",
+    name: "骷髅牌",
+    tagline: "3–6 人 · 可加人机",
+    description: "每人手里 4 张垫子：3 朵玫瑰、1 个骷髅。大家轮流往面前盖一张，或者开口叫价：「我能翻开 N 朵玫瑰」。叫得最高的人得自己翻，先翻自己的，再挑别人的；翻满 N 朵算成功，翻到骷髅就丢掉一张垫子。成功两次的人获胜，被吃光垫子就出局。唬人、加注、看穿别人，全凭一张脸。",
+    url: gameUrl("/skull/", 5191),
+    cover: skullCover,
   },
 ];
 

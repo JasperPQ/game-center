@@ -24,6 +24,7 @@ export const GAME_SERVERS: ReadonlyArray<{ id: string; name: string; port: numbe
   { id: "niutou", name: "谁是牛头王", port: 3015 },
   { id: "wonders", name: "七大奇迹", port: 3016 },
   { id: "loveletter", name: "情书", port: 3017 },
+  { id: "skull", name: "骷髅牌", port: 3018 },
 ];
 
 const TIMEOUT_MS = 4000;
