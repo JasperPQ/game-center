@@ -25,6 +25,7 @@ import wondersCover from "./assets/pixel/covers/wonders.png";
 import loveletterCover from "./assets/pixel/covers/loveletter.png";
 import skullCover from "./assets/pixel/covers/skull.png";
 import incanCover from "./assets/pixel/covers/incan.png";
+import yachtCover from "./assets/pixel/covers/yacht.png";
 import "./egg.css";
 import { ThemeToggle, useTheme } from "./theme";
 
@@ -183,6 +184,14 @@ const GAMES: readonly GameCard[] = [
     description: "一群探险者举着火把钻进神庙，一张张翻开通道：宝石大家平分，分不完的留在路上。每翻一张，所有人同时决定继续往里挖，还是带着手上的宝石回营地。同一种危险出现第二次，神庙就塌了，还没走的人两手空空。越往里越值钱，也越危险，打 5 局，带回营地最多的人赢。",
     url: gameUrl("/incan/", 5192),
     cover: incanCover,
+  },
+  {
+    id: "yacht",
+    name: "快艇骰子",
+    tagline: "1–6 人 · 可加人机",
+    description: "五颗骰子，每回合最多掷三次，每次自己挑哪几颗重掷。凑出三条、葫芦、顺子，或者五颗一样的「快艇」，再挑计分表上的一格填分；凑不成也得划掉一格。上半区凑够 63 分再奖 35 分。13 轮把表填满，总分最高的人赢。一个人也能挑战最高分。",
+    url: gameUrl("/yacht/", 5293),
+    cover: yachtCover,
   },
 ];
 
