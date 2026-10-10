@@ -20,6 +20,7 @@ import seasaltCover from "./assets/pixel/covers/seasalt.png";
 import mahjongCover from "./assets/pixel/covers/mahjong.png";
 import doudizhuCover from "./assets/pixel/covers/doudizhu.png";
 import kingdominoCover from "./assets/pixel/covers/kingdomino.png";
+import niutouCover from "./assets/pixel/covers/niutou.png";
 import "./egg.css";
 import { ThemeToggle, useTheme } from "./theme";
 
@@ -138,6 +139,14 @@ const GAMES: readonly GameCard[] = [
     description: "每人从一座城堡起步，轮流挑骨牌拼进自己的王国：麦田、森林、湖泊、草地、沼泽、矿山。同种地形连成一片，格数 × 皇冠就是这片的分；挑大号骨牌皇冠多，下一轮就得排在后面。",
     url: gameUrl("/kingdomino/", 5187),
     cover: kingdominoCover,
+  },
+  {
+    id: "niutou",
+    name: "谁是牛头王",
+    tagline: "2–10 人 · 可加人机",
+    description: "每人 10 张数字牌，大家同时扣下一张，亮牌后从小到大接到桌上 4 排里。谁的牌落在一排的第 6 格，就把前面 5 张连牛头一起收走；牌比每排都小，就自己挑一排收下。牛头越少越好，人多更热闹。",
+    url: gameUrl("/niutou/", 5188),
+    cover: niutouCover,
   },
 ];
 
