@@ -24,6 +24,7 @@ import niutouCover from "./assets/pixel/covers/niutou.png";
 import wondersCover from "./assets/pixel/covers/wonders.png";
 import loveletterCover from "./assets/pixel/covers/loveletter.png";
 import skullCover from "./assets/pixel/covers/skull.png";
+import incanCover from "./assets/pixel/covers/incan.png";
 import "./egg.css";
 import { ThemeToggle, useTheme } from "./theme";
 
@@ -174,6 +175,14 @@ const GAMES: readonly GameCard[] = [
     description: "每人手里 4 张垫子：3 朵玫瑰、1 个骷髅。大家轮流往面前盖一张，或者开口叫价：「我能翻开 N 朵玫瑰」。叫得最高的人得自己翻，先翻自己的，再挑别人的；翻满 N 朵算成功，翻到骷髅就丢掉一张垫子。成功两次的人获胜，被吃光垫子就出局。唬人、加注、看穿别人，全凭一张脸。",
     url: gameUrl("/skull/", 5191),
     cover: skullCover,
+  },
+  {
+    id: "incan",
+    name: "印加宝藏",
+    tagline: "3–8 人 · 可加人机",
+    description: "一群探险者举着火把钻进神庙，一张张翻开通道：宝石大家平分，分不完的留在路上。每翻一张，所有人同时决定继续往里挖，还是带着手上的宝石回营地。同一种危险出现第二次，神庙就塌了，还没走的人两手空空。越往里越值钱，也越危险，打 5 局，带回营地最多的人赢。",
+    url: gameUrl("/incan/", 5192),
+    cover: incanCover,
   },
 ];
 
