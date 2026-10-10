@@ -22,6 +22,7 @@ import doudizhuCover from "./assets/pixel/covers/doudizhu.png";
 import kingdominoCover from "./assets/pixel/covers/kingdomino.png";
 import niutouCover from "./assets/pixel/covers/niutou.png";
 import wondersCover from "./assets/pixel/covers/wonders.png";
+import loveletterCover from "./assets/pixel/covers/loveletter.png";
 import "./egg.css";
 import { ThemeToggle, useTheme } from "./theme";
 
@@ -156,6 +157,14 @@ const GAMES: readonly GameCard[] = [
     description: "每人经营一座古代名城、修一座奇迹。三个时代里，大家同时从手牌挑一张，剩下的传给邻居：盖原料作坊、神殿和集市，研究科技，扩充军队和左右邻居比拼，或者用这张牌给奇迹添一层。资源不够就向邻居花钱买，三个时代后分数最高的城邦获胜。",
     url: gameUrl("/wonders/", 5189),
     cover: wondersCover,
+  },
+  {
+    id: "loveletter",
+    name: "情书",
+    tagline: "2–6 人 · 可加人机",
+    description: "整副只有 21 张宫廷角色牌，每人手里只握 1 张。轮到你先摸一张，再从两张里打出一张：卫兵猜别人的牌，牧师偷看，男爵比大小，王子逼人弃牌……被猜中、比输或者丢掉了公主就出局。撑到最后、或者牌堆抽完时点数最大，就收下一枚钟情标记，先攒够的人赢。",
+    url: gameUrl("/loveletter/", 5190),
+    cover: loveletterCover,
   },
 ];
 
