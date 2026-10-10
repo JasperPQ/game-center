@@ -21,6 +21,7 @@ import mahjongCover from "./assets/pixel/covers/mahjong.png";
 import doudizhuCover from "./assets/pixel/covers/doudizhu.png";
 import kingdominoCover from "./assets/pixel/covers/kingdomino.png";
 import niutouCover from "./assets/pixel/covers/niutou.png";
+import wondersCover from "./assets/pixel/covers/wonders.png";
 import "./egg.css";
 import { ThemeToggle, useTheme } from "./theme";
 
@@ -147,6 +148,14 @@ const GAMES: readonly GameCard[] = [
     description: "每人 10 张数字牌，大家同时扣下一张，亮牌后从小到大接到桌上 4 排里。谁的牌落在一排的第 6 格，就把前面 5 张连牛头一起收走；牌比每排都小，就自己挑一排收下。牛头越少越好，人多更热闹。",
     url: gameUrl("/niutou/", 5188),
     cover: niutouCover,
+  },
+  {
+    id: "wonders",
+    name: "七大奇迹",
+    tagline: "3–7 人 · 可加人机",
+    description: "每人经营一座古代名城、修一座奇迹。三个时代里，大家同时从手牌挑一张，剩下的传给邻居：盖原料作坊、神殿和集市，研究科技，扩充军队和左右邻居比拼，或者用这张牌给奇迹添一层。资源不够就向邻居花钱买，三个时代后分数最高的城邦获胜。",
+    url: gameUrl("/wonders/", 5189),
+    cover: wondersCover,
   },
 ];
 
