@@ -31,6 +31,7 @@ import yachtCover from "./assets/pixel/covers/yacht.png";
 import baohuangCover from "./assets/pixel/covers/baohuang.png";
 import goujiCover from "./assets/pixel/covers/gouji.png";
 import welcometoCover from "./assets/pixel/covers/welcometo.png";
+import harmoniesCover from "./assets/pixel/covers/harmonies.png";
 import "./egg.css";
 import { ThemeToggle, useTheme } from "./theme";
 
@@ -221,6 +222,14 @@ const GAMES: readonly GameCard[] = [
     description: "五十年代郊区的建筑师比赛：每回合翻出三组「门牌号 + 行动」，大家同时挑一组，把门牌号填进自己的三条街，从左到右只能越填越大。画栅栏围出小区、建公园和泳池、雇临时工改号码，抢在别人前面完成市里的三张规划目标拿高分。",
     url: gameUrl("/welcometo/", 5298),
     cover: welcometoCover,
+  },
+  {
+    id: "harmonies",
+    name: "自然和弦",
+    tagline: "1–4 人 · 可加人机",
+    description: "每回合从中央拿三枚彩色木片，放到自己的六角小版图上：叠高的树和山更值分，连片的田、蜿蜒的河、挨着各色邻居的小屋也都算分。再领几张动物卡，在版图上摆出卡上的小图案，就能把动物请进家门，住进来的越多分越高。打到有人版图快放满或者布袋抽空为止，总分最高的人赢。",
+    url: gameUrl("/harmonies/", 5294),
+    cover: harmoniesCover,
   },
 ];
 
