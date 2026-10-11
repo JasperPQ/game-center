@@ -30,6 +30,7 @@ import incanCover from "./assets/pixel/covers/incan.png";
 import yachtCover from "./assets/pixel/covers/yacht.png";
 import baohuangCover from "./assets/pixel/covers/baohuang.png";
 import goujiCover from "./assets/pixel/covers/gouji.png";
+import welcometoCover from "./assets/pixel/covers/welcometo.png";
 import "./egg.css";
 import { ThemeToggle, useTheme } from "./theme";
 
@@ -212,6 +213,14 @@ const GAMES: readonly GameCard[] = [
     description: "青岛人爱打的六人牌：两队隔座坐，四副牌每人 36 张。打出够级的大牌，只有正对面的对头能接，别的人还能抢着烧牌，一口气把整手牌出完。按出完牌的先后排出头科到大落算分，一队包揽前三名就是串三户；下一盘落后的人要拿大王、2 给赢家进贡。",
     url: gameUrl("/gouji/", 5292),
     cover: goujiCover,
+  },
+  {
+    id: "welcometo",
+    name: "欢迎来到",
+    tagline: "1–6 人 · 同时填表 · 可加人机",
+    description: "五十年代郊区的建筑师比赛：每回合翻出三组「门牌号 + 行动」，大家同时挑一组，把门牌号填进自己的三条街，从左到右只能越填越大。画栅栏围出小区、建公园和泳池、雇临时工改号码，抢在别人前面完成市里的三张规划目标拿高分。",
+    url: gameUrl("/welcometo/", 5298),
+    cover: welcometoCover,
   },
 ];
 
