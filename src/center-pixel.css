@@ -45,7 +45,8 @@ body { background: repeating-conic-gradient(#13101a 0 25%, #0e0c13 0 50%) 0 0 / 
   .game-card, .game-card-enter, .guestbook-form, .guestbook-list, .guestbook-count, .text-input, .primary-button,
   .quiet-button, .guestbook-delete, .guestbook-entry-avatar, .guestbook-admin, .guestbook-admin-button,
   .account-panel, .account-tab, .account-redeem-button, .account-admin, .account-admin-button, .account-badge,
-  .account-admin-codes, .account-notice, .account-plan, .account-wechat-code
+  .account-admin-codes, .account-notice, .account-plan, .account-wechat-code,
+  .wish-vote, .guestbook-pin, .game-search-empty
 ) {
   border: 0;
   border-radius: 0;
@@ -59,7 +60,7 @@ body { background: repeating-conic-gradient(#13101a 0 25%, #0e0c13 0 50%) 0 0 / 
 }
 
 /* ---------- 按钮：靛蓝（普通）、金色（主要）、红色（危险）；按下时下沉一格 ---------- */
-.app-shell :is(.quiet-button, .guestbook-admin-button, .account-admin-button) {
+.app-shell :is(.quiet-button, .guestbook-admin-button, .account-admin-button, .guestbook-pin) {
   --rim: #6b5c8f;
   --shade: #141119;
   padding: 6px 12px;
@@ -70,7 +71,7 @@ body { background: repeating-conic-gradient(#13101a 0 25%, #0e0c13 0 50%) 0 0 / 
 }
 .app-shell :is(.primary-button, .game-card-enter, .account-redeem-button) { --rim: #fff2b8; --shade: #7a5410; color: #2a1c06; background: var(--gold); font-weight: 400; }
 .app-shell .guestbook-delete { --rim: #f25c5c; --shade: #3d0a12; padding: 0 6px; color: #ffd8d0; background: #6e1020; font-size: 12px; }
-.app-shell :is(.quiet-button, .guestbook-admin-button, .account-admin-button, .guestbook-delete):hover:not(:disabled) { filter: brightness(1.15); }
+.app-shell :is(.quiet-button, .guestbook-admin-button, .account-admin-button, .guestbook-delete, .guestbook-pin, .wish-vote):hover:not(:disabled) { filter: brightness(1.15); }
 .app-shell .guestbook-delete:hover:not(:disabled) { background: #6e1020; }
 /* 管理页里不可撤销的操作（删除账号、强制关闭房间）用和删除留言一样的红色 */
 .app-shell .account-admin-button.account-admin-danger { --rim: #f25c5c; --shade: #3d0a12; color: #ffd8d0; background: #6e1020; }
@@ -88,11 +89,11 @@ body { background: repeating-conic-gradient(#13101a 0 25%, #0e0c13 0 50%) 0 0 / 
     inset var(--px) var(--px) 0 0 var(--rim),
     inset calc(var(--px) * -1) calc(var(--px) * -1) 0 0 var(--shade);
 }
-.app-shell :is(.primary-button, .quiet-button, .guestbook-admin-button, .guestbook-delete):active:not(:disabled) {
+.app-shell :is(.primary-button, .quiet-button, .guestbook-admin-button, .guestbook-delete, .guestbook-pin, .wish-vote):active:not(:disabled) {
   transform: translateY(var(--px));
   --rim: var(--shade);
 }
-.app-shell :is(.primary-button, .quiet-button, .guestbook-admin-button, .guestbook-delete):disabled {
+.app-shell :is(.primary-button, .quiet-button, .guestbook-admin-button, .guestbook-delete, .guestbook-pin, .wish-vote):disabled {
   cursor: default;
   opacity: 1;
   filter: grayscale(0.6) brightness(0.7);
@@ -222,6 +223,76 @@ body { background: repeating-conic-gradient(#13101a 0 25%, #0e0c13 0 50%) 0 0 / 
 .app-shell .guestbook-admin { --rim: var(--gold-2); background: #241d16; }
 .app-shell .guestbook-admin-row { color: var(--gold); font-size: 12px; }
 .app-shell .guestbook-admin-row .text-input { height: 32px; }
+/* 置顶：暖色底 + 金色「置顶」小标签；管理员的「置顶」按钮和删除并排 */
+.app-shell .guestbook-entry.pinned { margin: 0 -16px; padding-right: 16px; padding-left: 16px; background: #241d16; }
+.app-shell .pin-badge {
+  flex: 0 0 auto;
+  padding: 0 6px;
+  color: #2a1c06;
+  background: var(--gold);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.app-shell .guestbook-pin { flex: 0 0 auto; padding: 0 6px; }
+.app-shell .guestbook-entry-meta { flex-wrap: wrap; align-items: center; row-gap: 4px; }
+
+/* ---------- 许愿池（沿用留言板的版式） ---------- */
+.app-shell .wishwell .guestbook-list { max-height: 420px; }
+.app-shell .wish-note { min-height: 72px; }
+.app-shell .wish-entry { align-items: flex-start; }
+.app-shell .wish-vote {
+  --rim: #6b5c8f;
+  --shade: #141119;
+  flex: 0 0 56px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 4px 0;
+  color: var(--text);
+  background: #332b44;
+  cursor: pointer;
+}
+.app-shell .wish-vote strong { font-size: 24px; font-weight: 400; line-height: 1.2; }
+.app-shell .wish-vote span { color: var(--muted); font-size: 12px; }
+.app-shell .wish-vote.voted { --rim: #fff2b8; --shade: #7a5410; color: #2a1c06; background: var(--gold); }
+.app-shell .wish-vote.voted span { color: #2a1c06; }
+.app-shell .wish-entry .guestbook-entry-meta strong.wish-game { color: var(--text); font-size: 24px; line-height: 1.2; overflow-wrap: anywhere; }
+.app-shell .wish-entry .guestbook-entry-meta time { margin-left: auto; }
+.app-shell .wish-list-error { margin: 12px 0 0; }
+
+/* ---------- 游戏区：标题 + 搜索 ---------- */
+.app-shell .games { border-top: var(--px) solid #332b44; padding-top: 35px; }
+.app-shell .games-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; margin-bottom: 20px; }
+.app-shell .games-heading h2 { margin: 0; color: var(--text); font-family: inherit; font-size: 24px; font-weight: 400; }
+.app-shell .games-heading h2 span { margin-left: 8px; color: var(--muted); font-size: 12px; }
+.app-shell .game-search { display: flex; flex: 0 1 380px; gap: 10px; }
+.app-shell .game-search .text-input { flex: 1; min-width: 0; }
+.app-shell .game-search .quiet-button { flex: 0 0 auto; }
+.app-shell .game-search-empty {
+  --rim: var(--gold-2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 40px;
+  padding: 36px 20px;
+  color: var(--muted);
+  background: var(--panel);
+  text-align: center;
+}
+.app-shell .game-search-empty strong { color: var(--text); font-size: 24px; font-weight: 400; overflow-wrap: anywhere; }
+.app-shell .game-search-empty p { margin: 0; font-size: 12px; }
+.app-shell .game-search-empty .primary-button { width: auto; min-height: 0; margin-top: 8px; padding: 10px 18px; max-width: 100%; overflow-wrap: anywhere; }
+
+/* 价格旁的「试运营期间价格」小标签 */
+.app-shell .account-price-note {
+  margin-left: 8px;
+  padding: 0 6px;
+  color: #2a1c06;
+  background: var(--gold);
+  font-size: 12px;
+}
+
 .app-shell .page-footer { border-top: var(--px) solid #332b44; color: var(--muted); font-size: 12px; letter-spacing: 0.05em; }
 
 @media (prefers-reduced-motion: reduce) {
@@ -231,6 +302,8 @@ body { background: repeating-conic-gradient(#13101a 0 25%, #0e0c13 0 50%) 0 0 / 
 /* 原样式在窄屏下会改字号；像素字体要保持 12 的整数倍 */
 @media (max-width: 520px) {
   .app-shell .hero h1 { font-size: 48px; }
+  .app-shell .game-search { flex-basis: 100%; }
+  .app-shell .games { padding-top: 27px; }
   .app-shell .topbar-right { gap: 8px; }
   .app-shell .quiet-button { padding: 4px 8px; }
 }
@@ -278,3 +351,6 @@ body { background: repeating-conic-gradient(#13101a 0 25%, #0e0c13 0 50%) 0 0 / 
 .app-shell .account-admin-table th { color: var(--gold); font-size: 12px; font-weight: 400; }
 .app-shell .account-admin-table th, .app-shell .account-admin-table td { border-bottom: var(--px) solid var(--panel-2); }
 .app-shell .account-admin-empty { color: var(--muted); font-size: 12px; }
+
+/* 搜索框只留自己的「清除」按钮 */
+.app-shell .game-search input::-webkit-search-cancel-button { display: none; -webkit-appearance: none; }

@@ -1,10 +1,12 @@
-import { useEffect, useState, type FormEvent, type MouseEvent } from "react";
-import { PRICE_PER_MONTH_YUAN, TRIAL_DAYS } from "../shared/pricing";
+import { useEffect, useMemo, useState, type FormEvent, type MouseEvent } from "react";
+import { PRICE_LABEL, TRIAL_DAYS } from "../shared/pricing";
 import type { GuestbookEntry, PublicAccount } from "../shared/types";
 import { Account, readPendingOrder } from "./Account";
 import { api } from "./api";
-import Guestbook from "./Guestbook";
+import { adminEntryEnabled, readStoredAdminToken, storeAdminToken } from "./admin";
+import Guestbook, { BoardAdminBar } from "./Guestbook";
 import { socket } from "./socket";
+import WishingWell from "./WishingWell";
 import eggUrl from "./assets/pixel/egg.png";
 // 每个游戏卡片的封面（PixelLab 生成，见 art/covers.py）
 import gemCover from "./assets/pixel/covers/gem-merchant.png";
@@ -213,6 +215,31 @@ const GAMES: readonly GameCard[] = [
   },
 ];
 
+/** 搜索时忽略大小写、空格和中间点。 */
+function normalizeSearch(text: string): string {
+  return text.toLowerCase().replace(/[\s·・]+/g, "");
+}
+
+/** 卡片标语里的人数范围（「2–4 人」「6 人」），搜「4人」「4」时按人数匹配。 */
+function playerRange(tagline: string): [number, number] | null {
+  const match = /(\d+)\s*(?:[–~-]\s*(\d+))?\s*人/.exec(tagline);
+  if (!match) return null;
+  const low = Number(match[1]);
+  return [low, match[2] ? Number(match[2]) : low];
+}
+
+/** 按名字、标语、简介搜；只输入人数（「5」「5人」「5 个人」）时找能这么多人玩的游戏。 */
+function matchGame(game: GameCard, query: string): boolean {
+  const needle = normalizeSearch(query);
+  if (!needle) return true;
+  const players = /^(\d+)个?人?$/.exec(needle);
+  if (players) {
+    const range = playerRange(game.tagline);
+    return range !== null && Number(players[1]) >= range[0] && Number(players[1]) <= range[1];
+  }
+  return normalizeSearch(`${game.name} ${game.tagline} ${game.description} ${game.id}`).includes(needle);
+}
+
 // 网关拦下没订阅的访客时会带着 ?gate=login|expired|trial|kicked&next=<游戏路径> 回到大厅；付款页回来时带 ?order=<订单号>。
 const landingParams = new URLSearchParams(window.location.search);
 const landingGate = landingParams.get("gate");
@@ -242,6 +269,24 @@ function App() {
   // 登录状态；null 表示未登录，subscribed 决定能否进入游戏。
   const [user, setUser] = useState<PublicAccount | null>(null);
   const [accountNotice, setAccountNotice] = useState(() => gateNotice(landingGate));
+  // 留言板和许愿池共用的管理员口令（网址带 ?admin 时才有入口）。
+  const [adminToken, setAdminToken] = useState(readStoredAdminToken);
+  const [wishGame, setWishGame] = useState("");
+  const [query, setQuery] = useState("");
+  const visibleGames = useMemo(() => GAMES.filter((game) => matchGame(game, query)), [query]);
+
+  function updateAdminToken(token: string) {
+    setAdminToken(token);
+    storeAdminToken(token);
+  }
+
+  /** 搜不到想玩的游戏：把搜的词带进许愿池。 */
+  function wishForQuery() {
+    setWishGame(query.trim().slice(0, 30));
+    const target = document.getElementById("wishes");
+    target?.scrollIntoView({ behavior: "smooth", block: "start" });
+    window.setTimeout(() => document.getElementById("wish-game")?.focus({ preventScroll: true }), 400);
+  }
 
   useEffect(() => {
     api.me().then((response) => {
@@ -364,7 +409,7 @@ function App() {
             <img src={eggUrl} alt="" width={42} height={58} />
           </a>
         </div>
-        <p>新用户送 {TRIAL_DAYS} 天试用，之后 {PRICE_PER_MONTH_YUAN} 元 / 月。选一款游戏，创建房间把房间码发给朋友（朋友也要登录）就能开始。</p>
+        <p>新用户送 {TRIAL_DAYS} 天试用，之后 {PRICE_LABEL}。选一款游戏，创建房间把房间码发给朋友（朋友也要登录）就能开始。</p>
       </section>
 
       {accountNotice && <p className="account-notice" role="status">{accountNotice}</p>}
@@ -377,26 +422,67 @@ function App() {
 
       <Account user={user} onUserChange={handleUserChange} returningOrderId={landingOrderId} />
 
-      <section className="game-grid" aria-label="选择游戏">
-        {GAMES.map((game) => (
-          <a
-            className={`game-card game-card-${game.id}`}
-            href={game.url}
-            key={game.id}
-            onClick={handleGameClick}
-          >
-            <div className="game-art game-cover" aria-hidden="true">
-              <img src={game.cover} alt="" />
-              {game.badge && <span className="game-card-badge">{game.badge}</span>}
-            </div>
-            <div className="game-card-body">
-              <span className="game-card-tagline">{game.tagline}</span>
-              <h2>{game.name}</h2>
-              <p>{game.description}</p>
-              <span className="game-card-enter">进入游戏 <span aria-hidden="true">→</span></span>
-            </div>
-          </a>
-        ))}
+      {adminEntryEnabled && (
+        <BoardAdminBar token={adminToken} connected={connected} onTokenChange={updateAdminToken} />
+      )}
+
+      <WishingWell connected={connected} adminToken={adminToken} game={wishGame} onGameChange={setWishGame} />
+
+      <section className="games" aria-labelledby="games-title">
+        <div className="games-heading">
+          <h2 id="games-title">全部游戏 <span>{query.trim() ? `找到 ${visibleGames.length} 款` : `${GAMES.length} 款`}</span></h2>
+          <div className="game-search" role="search">
+            <input
+              className="text-input"
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="搜索游戏：名字、玩法，或输入人数如 5"
+              aria-label="搜索游戏"
+              maxLength={30}
+            />
+            {query && (
+              <button type="button" className="quiet-button" onClick={() => setQuery("")}>清除</button>
+            )}
+          </div>
+        </div>
+        {visibleGames.length > 0 ? (
+          <div className="game-grid">
+            {visibleGames.map((game) => (
+              <a
+                className={`game-card game-card-${game.id}`}
+                href={game.url}
+                key={game.id}
+                onClick={handleGameClick}
+              >
+                <div className="game-art game-cover" aria-hidden="true">
+                  <img src={game.cover} alt="" />
+                  {game.badge && <span className="game-card-badge">{game.badge}</span>}
+                </div>
+                <div className="game-card-body">
+                  <span className="game-card-tagline">{game.tagline}</span>
+                  <h2>{game.name}</h2>
+                  <p>{game.description}</p>
+                  <span className="game-card-enter">进入游戏 <span aria-hidden="true">→</span></span>
+                </div>
+              </a>
+            ))}
+          </div>
+        ) : (
+          <div className="game-search-empty">
+            <strong>没找到「{query.trim()}」</strong>
+            {/^\d+\s*个?人?$/.test(query.trim()) ? (
+              <p>暂时没有能这么多人一起玩的游戏，换个人数试试。</p>
+            ) : (
+              <>
+                <p>站上暂时还没有这款游戏。想玩的话，去许愿池许个愿，票多的我们优先做。</p>
+                <button type="button" className="primary-button" onClick={wishForQuery}>
+                  把「{query.trim().slice(0, 30)}」投进许愿池 <span aria-hidden="true">✦</span>
+                </button>
+              </>
+            )}
+          </div>
+        )}
       </section>
 
       <Guestbook
@@ -410,6 +496,7 @@ function App() {
         onNameChange={setGuestName}
         onMessageChange={setGuestMessage}
         onSubmit={submit}
+        adminToken={adminToken}
       />
       <footer className="page-footer">围坐桌边，专注每一次选择。</footer>
     </main>

@@ -10,6 +10,7 @@ data/accounts.json
 data/codes.json
 data/sessions.json
 data/orders.json
+data/wishes.json
 
 # PixelLab 生成的原图和中间文件
 art/out/

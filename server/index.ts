@@ -8,12 +8,14 @@ import type {
   ClientToServerEvents,
   DeleteGuestbookEntry,
   GuestbookEntry,
+  PinEntry,
   ServerToClientEvents,
   SubmitGuestbookEntry,
 } from "../shared/types.js";
 import { adminTokenHash, verifyAdminToken } from "./admin-token.js";
 import { handleApiRequest } from "./http.js";
 import { startPaymentSync } from "./payments.js";
+import { registerWishHandlers } from "./wishes.js";
 
 const GUESTBOOK_LIMIT = 200;
 const GUESTBOOK_RATE_LIMIT_MS = 10_000;
@@ -35,17 +37,30 @@ function loadGuestbook(): GuestbookEntry[] {
       && typeof entry.id === "string"
       && typeof entry.name === "string"
       && typeof entry.message === "string"
-      && typeof entry.createdAt === "string",
-    ).slice(-GUESTBOOK_LIMIT);
+      && typeof entry.createdAt === "string"
+      && (entry.pinnedAt === undefined || typeof entry.pinnedAt === "string"),
+    );
   } catch {
     return [];
   }
 }
 
-let guestbookEntries = loadGuestbook();
+/** 超过上限时从最早的未置顶留言删起，置顶的不会被挤掉。 */
+function trimGuestbook(entries: GuestbookEntry[]): GuestbookEntry[] {
+  let excess = entries.length - GUESTBOOK_LIMIT;
+  if (excess <= 0) return entries;
+  return entries.filter((entry) => entry.pinnedAt !== undefined || excess-- <= 0);
+}
 
+let guestbookEntries = trimGuestbook(loadGuestbook());
+
+/** 置顶的在最上面（越晚置顶越靠前），其余从新到旧。 */
 function getGuestbookEntries(): GuestbookEntry[] {
-  return [...guestbookEntries].reverse().map((entry) => ({ ...entry }));
+  const newestFirst = [...guestbookEntries].reverse().map((entry) => ({ ...entry }));
+  const pinned = newestFirst
+    .filter((entry) => entry.pinnedAt !== undefined)
+    .sort((a, b) => (b.pinnedAt ?? "").localeCompare(a.pinnedAt ?? ""));
+  return [...pinned, ...newestFirst.filter((entry) => entry.pinnedAt === undefined)];
 }
 
 function saveGuestbook(): void {
@@ -160,11 +175,12 @@ io.on("connection", (socket) => {
       message,
       createdAt: new Date(now).toISOString(),
     };
-    guestbookEntries = [...guestbookEntries, entry].slice(-GUESTBOOK_LIMIT);
+    const beforePost = guestbookEntries;
+    guestbookEntries = trimGuestbook([...guestbookEntries, entry]);
     try {
       saveGuestbook();
     } catch {
-      guestbookEntries = guestbookEntries.filter((candidate) => candidate.id !== entry.id);
+      guestbookEntries = beforePost;
       ack({ ok: false, error: "留言暂时无法保存，请稍后重试。" });
       return;
     }
@@ -204,6 +220,38 @@ io.on("connection", (socket) => {
     ack({ ok: true, data: entries });
     io.emit("guestbook:updated", entries);
   });
+
+  socket.on("guestbook:pin", (payload: PinEntry, ack) => {
+    const error = checkAdminToken(socket.id, payload?.token);
+    if (error) {
+      ack({ ok: false, error });
+      return;
+    }
+    const previousEntries = guestbookEntries;
+    if (!previousEntries.some((entry) => entry.id === payload.id)) {
+      ack({ ok: false, error: "这条留言已不存在。" });
+      return;
+    }
+    const pinnedAt = new Date().toISOString();
+    guestbookEntries = previousEntries.map((entry) => {
+      if (entry.id !== payload.id) return entry;
+      const { pinnedAt: _previous, ...rest } = entry;
+      return payload.pinned ? { ...rest, pinnedAt } : rest;
+    });
+    try {
+      saveGuestbook();
+    } catch {
+      guestbookEntries = previousEntries;
+      ack({ ok: false, error: "置顶暂时无法保存，请稍后重试。" });
+      return;
+    }
+
+    const entries = getGuestbookEntries();
+    ack({ ok: true, data: entries });
+    io.emit("guestbook:updated", entries);
+  });
+
+  registerWishHandlers(io, socket, checkAdminToken);
 
   socket.on("disconnect", () => {
     guestbookPostTimes.delete(socket.id);

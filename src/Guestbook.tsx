@@ -2,27 +2,6 @@ import { useState, type FormEvent } from "react";
 import type { GuestbookEntry } from "../shared/types";
 import { socket } from "./socket";
 
-const ADMIN_TOKEN_KEY = "game-center-admin-token";
-// 在网址后加 ?admin 才显示管理员入口。
-const adminEntryEnabled = new URLSearchParams(window.location.search).has("admin");
-
-function readStoredAdminToken(): string {
-  try {
-    return sessionStorage.getItem(ADMIN_TOKEN_KEY) ?? "";
-  } catch {
-    return "";
-  }
-}
-
-function storeAdminToken(token: string): void {
-  try {
-    if (token) sessionStorage.setItem(ADMIN_TOKEN_KEY, token);
-    else sessionStorage.removeItem(ADMIN_TOKEN_KEY);
-  } catch {
-    // 存储不可用时仅在本页有效。
-  }
-}
-
 function Guestbook({
   entries,
   name,
@@ -34,6 +13,7 @@ function Guestbook({
   onNameChange,
   onMessageChange,
   onSubmit,
+  adminToken,
 }: {
   entries: GuestbookEntry[];
   name: string;
@@ -45,34 +25,28 @@ function Guestbook({
   onNameChange: (value: string) => void;
   onMessageChange: (value: string) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  /** 管理员口令；非空时每条留言旁出现「置顶」「删除」。 */
+  adminToken: string;
 }) {
-  const [adminToken, setAdminToken] = useState(() => (adminEntryEnabled ? readStoredAdminToken() : ""));
   const [adminError, setAdminError] = useState("");
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-
-  function updateAdminToken(token: string) {
-    setAdminToken(token);
-    storeAdminToken(token);
-  }
-
-  function loginAdmin(token: string) {
-    setAdminError("");
-    socket.emit("admin:verify", token, (response) => {
-      if (!response.ok) {
-        setAdminError(response.error);
-        return;
-      }
-      updateAdminToken(token);
-    });
-  }
+  const [busyId, setBusyId] = useState<string | null>(null);
 
   function deleteEntry(entry: GuestbookEntry) {
     if (!window.confirm(`确定删除 ${entry.name} 的这条留言吗？删除后无法恢复。`)) return;
     setAdminError("");
-    setDeletingId(entry.id);
+    setBusyId(entry.id);
     // 删除成功后服务端会广播 guestbook:updated，列表随之刷新。
     socket.emit("guestbook:delete", { id: entry.id, token: adminToken }, (response) => {
-      setDeletingId(null);
+      setBusyId(null);
+      if (!response.ok) setAdminError(response.error);
+    });
+  }
+
+  function togglePin(entry: GuestbookEntry) {
+    setAdminError("");
+    setBusyId(entry.id);
+    socket.emit("guestbook:pin", { id: entry.id, token: adminToken, pinned: !entry.pinnedAt }, (response) => {
+      setBusyId(null);
       if (!response.ok) setAdminError(response.error);
     });
   }
@@ -88,15 +62,7 @@ function Guestbook({
         <span className="guestbook-count">{entries.length} 条留言</span>
       </div>
 
-      {adminEntryEnabled && (
-        <GuestbookAdminBar
-          token={adminToken}
-          connected={connected}
-          error={adminError}
-          onLogin={loginAdmin}
-          onLogout={() => updateAdminToken("")}
-        />
-      )}
+      {adminError && <p className="feedback feedback-error" role="alert">{adminError}</p>}
 
       <div className="guestbook-layout">
         <form className="guestbook-form" onSubmit={onSubmit}>
@@ -131,21 +97,32 @@ function Guestbook({
 
         <div className="guestbook-list" aria-live="polite" aria-label="游客评价">
           {entries.length > 0 ? entries.map((entry) => (
-            <article className="guestbook-entry" key={entry.id}>
+            <article className={entry.pinnedAt ? "guestbook-entry pinned" : "guestbook-entry"} key={entry.id}>
               <div className="guestbook-entry-avatar">{entry.name.slice(0, 1).toUpperCase()}</div>
               <div className="guestbook-entry-content">
                 <div className="guestbook-entry-meta">
                   <strong>{entry.name}</strong>
+                  {entry.pinnedAt && <span className="pin-badge">置顶</span>}
                   <time dateTime={entry.createdAt}>{formatGuestbookDate(entry.createdAt)}</time>
                   {adminToken && (
-                    <button
-                      className="guestbook-delete"
-                      type="button"
-                      disabled={!connected || deletingId === entry.id}
-                      onClick={() => deleteEntry(entry)}
-                    >
-                      {deletingId === entry.id ? "删除中…" : "删除"}
-                    </button>
+                    <>
+                      <button
+                        className="guestbook-pin"
+                        type="button"
+                        disabled={!connected || busyId === entry.id}
+                        onClick={() => togglePin(entry)}
+                      >
+                        {entry.pinnedAt ? "取消置顶" : "置顶"}
+                      </button>
+                      <button
+                        className="guestbook-delete"
+                        type="button"
+                        disabled={!connected || busyId === entry.id}
+                        onClick={() => deleteEntry(entry)}
+                      >
+                        删除
+                      </button>
+                    </>
                   )}
                 </div>
                 <p>{entry.message}</p>
@@ -164,33 +141,40 @@ function Guestbook({
   );
 }
 
-function GuestbookAdminBar({
+/** 留言板和许愿池共用的管理员入口（网址带 ?admin 时显示）。 */
+export function BoardAdminBar({
   token,
   connected,
-  error,
-  onLogin,
-  onLogout,
+  onTokenChange,
 }: {
   token: string;
   connected: boolean;
-  error: string;
-  onLogin: (token: string) => void;
-  onLogout: () => void;
+  onTokenChange: (token: string) => void;
 }) {
   const [input, setInput] = useState("");
+  const [error, setError] = useState("");
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (input.trim()) onLogin(input.trim());
+    const candidate = input.trim();
     setInput("");
+    if (!candidate) return;
+    setError("");
+    socket.emit("admin:verify", candidate, (response) => {
+      if (!response.ok) {
+        setError(response.error);
+        return;
+      }
+      onTokenChange(candidate);
+    });
   }
 
   return (
     <div className="guestbook-admin">
       {token ? (
         <div className="guestbook-admin-row">
-          <span>管理员模式：可删除任意留言</span>
-          <button className="guestbook-admin-button" type="button" onClick={onLogout}>退出管理</button>
+          <span>管理员模式：许愿池和留言板里可以置顶、删除</span>
+          <button className="guestbook-admin-button" type="button" onClick={() => onTokenChange("")}>退出管理</button>
         </div>
       ) : (
         <form className="guestbook-admin-row" onSubmit={submit}>
@@ -211,7 +195,7 @@ function GuestbookAdminBar({
   );
 }
 
-function formatGuestbookDate(value: string): string {
+export function formatGuestbookDate(value: string): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "刚刚";
   return new Intl.DateTimeFormat("zh-CN", {

@@ -3,6 +3,8 @@ export interface GuestbookEntry {
   readonly name: string;
   readonly message: string;
   readonly createdAt: string;
+  /** 管理员置顶的时间；置顶的排在最上面，越晚置顶越靠前。 */
+  readonly pinnedAt?: string;
 }
 
 export interface SubmitGuestbookEntry {
@@ -15,6 +17,42 @@ export interface DeleteGuestbookEntry {
   readonly token: string;
 }
 
+/** 管理员置顶 / 取消置顶（留言板和许愿池共用）。 */
+export interface PinEntry {
+  readonly id: string;
+  readonly token: string;
+  readonly pinned: boolean;
+}
+
+/** 许愿池里的一条愿望：想在站上玩到的游戏。 */
+export interface Wish {
+  readonly id: string;
+  readonly name: string;
+  /** 想要的游戏名。 */
+  readonly game: string;
+  /** 补充说明，可以为空。 */
+  readonly note: string;
+  readonly createdAt: string;
+  /** 「我也想要」的人数（含许愿的人自己）。 */
+  readonly votes: number;
+  readonly pinnedAt?: string;
+}
+
+export interface SubmitWish {
+  readonly name?: string;
+  readonly game: string;
+  readonly note?: string;
+  /** 浏览器里随机生成、存在 localStorage 的投票人编号，同一个编号每条愿望只算一票。 */
+  readonly voterId: string;
+}
+
+export interface VoteWish {
+  readonly id: string;
+  readonly voterId: string;
+  /** true 是 +1，false 是撤回。 */
+  readonly voted: boolean;
+}
+
 export type AckResponse<T> = { ok: true; data: T } | { ok: false; error: string };
 export type Ack<T> = (response: AckResponse<T>) => void;
 
@@ -23,10 +61,17 @@ export interface ClientToServerEvents {
   "guestbook:post": (payload: SubmitGuestbookEntry, ack: Ack<GuestbookEntry[]>) => void;
   "admin:verify": (token: string, ack: Ack<void>) => void;
   "guestbook:delete": (payload: DeleteGuestbookEntry, ack: Ack<GuestbookEntry[]>) => void;
+  "guestbook:pin": (payload: PinEntry, ack: Ack<GuestbookEntry[]>) => void;
+  "wishes:get": (ack: Ack<Wish[]>) => void;
+  "wishes:post": (payload: SubmitWish, ack: Ack<Wish[]>) => void;
+  "wishes:vote": (payload: VoteWish, ack: Ack<Wish[]>) => void;
+  "wishes:delete": (payload: DeleteGuestbookEntry, ack: Ack<Wish[]>) => void;
+  "wishes:pin": (payload: PinEntry, ack: Ack<Wish[]>) => void;
 }
 
 export interface ServerToClientEvents {
   "guestbook:updated": (entries: GuestbookEntry[]) => void;
+  "wishes:updated": (wishes: Wish[]) => void;
 }
 
 /** 登录后的账号信息（不含密码）。subscribed 与 daysLeft 每次读取时按当前时间现算。 */

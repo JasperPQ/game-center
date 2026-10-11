@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { formatYuan, PLAN_MONTHS, PRICE_PER_MONTH_YUAN, priceFen, TRIAL_DAYS } from "../shared/pricing";
+import { formatYuan, PLAN_MONTHS, PRICE_LABEL, PRICE_NOTE, priceFen, TRIAL_DAYS } from "../shared/pricing";
 import type { AdminGameRooms, AdminRoom, PublicAccount, PublicOrder } from "../shared/types";
 import { api, type PayConfigResponse, type WechatConfigResponse } from "./api";
 import { Letter } from "./Letter";
@@ -100,8 +100,8 @@ export function Account({
           </div>
           <p>
             {user
-              ? `订阅有效期内，所有游戏都能进。${PRICE_PER_MONTH_YUAN} 元 / 月。`
-              : `${trialHint}，之后 ${PRICE_PER_MONTH_YUAN} 元 / 月，所有游戏都能玩。`}
+              ? `订阅有效期内，所有游戏都能进。${PRICE_LABEL}。`
+              : `${trialHint}，之后 ${PRICE_LABEL}，所有游戏都能玩。`}
           </p>
         </div>
       </div>
@@ -199,7 +199,7 @@ function LoginRegister({ onUserChange, trialHint }: { onUserChange: (user: Publi
           {busy ? <><span className="spinner" /> 请稍候</> : mode === "login" ? "登录" : "注册并登录"}
         </button>
         {mode === "register" ? (
-          <p className="account-hint">注册即登录，{trialHint}；之后 {PRICE_PER_MONTH_YUAN} 元 / 月。</p>
+          <p className="account-hint">注册即登录，{trialHint}；之后 {PRICE_LABEL}。</p>
         ) : (
           <p className="account-hint">忘记密码请在下方留言板留言，管理员帮你重置。</p>
         )}
@@ -219,7 +219,7 @@ function statusNote(user: PublicAccount): string {
   if (user.lifetime) return "永久会员，所有游戏随便玩，不用续费。";
   if (!user.subscribed && !user.paid && !user.trialClaimed) return "还没开通。按上面的步骤去公众号领试用，或者在下方直接付款开通。";
   if (!user.subscribed) return "游戏入口暂时关闭了。在下方续费，或输入兑换码，马上就能继续玩。";
-  if (user.trial) return `试用期内所有游戏都能玩。试用结束后 ${PRICE_PER_MONTH_YUAN} 元 / 月，现在续费，剩下的试用天数照样保留。`;
+  if (user.trial) return `试用期内所有游戏都能玩。试用结束后 ${PRICE_LABEL}，现在续费，剩下的试用天数照样保留。`;
   if (user.daysLeft <= 3) return "订阅快到期了，续费后从原到期日往后顺延。";
   return "订阅有效，可以进入任意游戏开桌了。续费从原到期日往后顺延。";
 }
@@ -467,7 +467,7 @@ function Purchase({
 
   return (
     <form className="account-purchase" onSubmit={pay}>
-      <span className="field-label">续费时长</span>
+      <span className="field-label">续费时长{PRICE_NOTE && <span className="account-price-note">{PRICE_NOTE}</span>}</span>
       <div className="account-plans" role="radiogroup" aria-label="续费时长">
         {PLAN_MONTHS.map((plan) => (
           <button
