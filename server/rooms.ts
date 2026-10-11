@@ -28,6 +28,7 @@ export const GAME_SERVERS: ReadonlyArray<{ id: string; name: string; port: numbe
   { id: "incan", name: "印加宝藏", port: 3019 },
   { id: "yacht", name: "快艇骰子", port: 3022 },
   { id: "baohuang", name: "保皇", port: 3020 },
+  { id: "gouji", name: "够级", port: 3021 },
 ];
 
 const TIMEOUT_MS = 4000;

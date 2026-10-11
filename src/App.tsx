@@ -27,6 +27,7 @@ import skullCover from "./assets/pixel/covers/skull.png";
 import incanCover from "./assets/pixel/covers/incan.png";
 import yachtCover from "./assets/pixel/covers/yacht.png";
 import baohuangCover from "./assets/pixel/covers/baohuang.png";
+import goujiCover from "./assets/pixel/covers/gouji.png";
 import "./egg.css";
 import { ThemeToggle, useTheme } from "./theme";
 
@@ -201,6 +202,14 @@ const GAMES: readonly GameCard[] = [
     description: "五个人分四副去掉 3、4、5 的扑克。拿到皇牌的人登基当皇帝，亮出三张同花色同点数的牌，第四张在谁手里，谁就是暗中的侍卫；皇帝也可以一个人独保，以一敌四。其余的人是革命党，可谁是侍卫要打到那张牌落地才知道。一样的点数越凑越多越大，抢先出完手牌的人走科，按名次算一盘输赢，打完几盘总分最高的人赢。",
     url: gameUrl("/baohuang/", 5291),
     cover: baohuangCover,
+  },
+  {
+    id: "gouji",
+    name: "够级",
+    tagline: "6 人 · 三对三 · 人机自动补位",
+    description: "青岛人爱打的六人牌：两队隔座坐，四副牌每人 36 张。打出够级的大牌，只有正对面的对头能接，别的人还能抢着烧牌，一口气把整手牌出完。按出完牌的先后排出头科到大落算分，一队包揽前三名就是串三户；下一盘落后的人要拿大王、2 给赢家进贡。",
+    url: gameUrl("/gouji/", 5292),
+    cover: goujiCover,
   },
 ];
 
