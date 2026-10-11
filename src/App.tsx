@@ -33,6 +33,7 @@ import baohuangCover from "./assets/pixel/covers/baohuang.png";
 import goujiCover from "./assets/pixel/covers/gouji.png";
 import welcometoCover from "./assets/pixel/covers/welcometo.png";
 import harmoniesCover from "./assets/pixel/covers/harmonies.png";
+import hanabiCover from "./assets/pixel/covers/hanabi.png";
 import "./egg.css";
 import { ThemeToggle, useTheme } from "./theme";
 import { MusicToggle, useBgm, type BgmTrack } from "./bgm";
@@ -232,6 +233,14 @@ const GAMES: readonly GameCard[] = [
     description: "每回合从中央拿三枚彩色木片，放到自己的六角小版图上：叠高的树和山更值分，连片的田、蜿蜒的河、挨着各色邻居的小屋也都算分。再领几张动物卡，在版图上摆出卡上的小图案，就能把动物请进家门，住进来的越多分越高。打到有人版图快放满或者布袋抽空为止，总分最高的人赢。",
     url: gameUrl("/harmonies/", 5294),
     cover: harmoniesCover,
+  },
+  {
+    id: "hanabi",
+    name: "花火",
+    tagline: "2–5 人 · 合作 · 可加人机",
+    description: "全队一起办一场烟火大会：每个人都看不到自己的牌，只看得到队友的。轮到你时给队友一个提示（「这两张是红色」「这张是 3」）、弃一张牌换回提示，或者凭推理打出一张，把红黄绿蓝白五色烟火各按 1 到 5 放上天。打错三次全队失败，牌堆摸完时五色加起来就是全队得分，满分 25。",
+    url: gameUrl("/hanabi/", 5295),
+    cover: hanabiCover,
   },
 ];
 
