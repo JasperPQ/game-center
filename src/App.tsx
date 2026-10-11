@@ -26,6 +26,7 @@ import loveletterCover from "./assets/pixel/covers/loveletter.png";
 import skullCover from "./assets/pixel/covers/skull.png";
 import incanCover from "./assets/pixel/covers/incan.png";
 import yachtCover from "./assets/pixel/covers/yacht.png";
+import baohuangCover from "./assets/pixel/covers/baohuang.png";
 import "./egg.css";
 import { ThemeToggle, useTheme } from "./theme";
 
@@ -192,6 +193,14 @@ const GAMES: readonly GameCard[] = [
     description: "五颗骰子，每回合最多掷三次，每次自己挑哪几颗重掷。凑出三条、葫芦、顺子，或者五颗一样的「快艇」，再挑计分表上的一格填分；凑不成也得划掉一格。上半区凑够 63 分再奖 35 分。13 轮把表填满，总分最高的人赢。一个人也能挑战最高分。",
     url: gameUrl("/yacht/", 5293),
     cover: yachtCover,
+  },
+  {
+    id: "baohuang",
+    name: "保皇",
+    tagline: "5 人 · 人机自动补位",
+    description: "五个人分四副去掉 3、4、5 的扑克。拿到皇牌的人登基当皇帝，亮出三张同花色同点数的牌，第四张在谁手里，谁就是暗中的侍卫；皇帝也可以一个人独保，以一敌四。其余的人是革命党，可谁是侍卫要打到那张牌落地才知道。一样的点数越凑越多越大，抢先出完手牌的人走科，按名次算一盘输赢，打完几盘总分最高的人赢。",
+    url: gameUrl("/baohuang/", 5291),
+    cover: baohuangCover,
   },
 ];
 
