@@ -34,6 +34,7 @@ import goujiCover from "./assets/pixel/covers/gouji.png";
 import welcometoCover from "./assets/pixel/covers/welcometo.png";
 import harmoniesCover from "./assets/pixel/covers/harmonies.png";
 import hanabiCover from "./assets/pixel/covers/hanabi.png";
+import carcassonneCover from "./assets/pixel/covers/carcassonne.png";
 import "./egg.css";
 import { ThemeToggle, useTheme } from "./theme";
 import { SoundToggle, useBgm, type BgmTrack } from "./gm-sound";
@@ -241,6 +242,14 @@ const GAMES: readonly GameCard[] = [
     description: "全队一起办一场烟火大会：每个人都看不到自己的牌，只看得到队友的。轮到你时给队友一个提示（「这两张是红色」「这张是 3」）、弃一张牌换回提示，或者凭推理打出一张，把红黄绿蓝白五色烟火各按 1 到 5 放上天。打错三次全队失败，牌堆摸完时五色加起来就是全队得分，满分 25。",
     url: gameUrl("/hanabi/", 5295),
     cover: hanabiCover,
+  },
+  {
+    id: "carcassonne",
+    name: "卡卡颂",
+    tagline: "2–5 人 · 可加人机",
+    description: "大家轮流抽一块地块，拼到桌上越来越大的地图里：城市接城市、道路接道路、草地接草地。放下后可以派一个小人去占这块上的道路、城市、修道院或田野，等路修通、城墙合拢、修道院四周填满，占着它的人就拿分、小人回到手里。地块用完后，没完成的区域和田野再算一次，总分最高的人赢。",
+    url: gameUrl("/carcassonne/", 5296),
+    cover: carcassonneCover,
   },
 ];
 
