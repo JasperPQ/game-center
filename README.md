@@ -116,3 +116,9 @@ PixelLab 出图，密钥只在 `~/.config/pixellab/api_key`，不进仓库；每
 ## 服务器上的启动方式
 
 pm2 按仓库根目录的 `ecosystem.config.cjs` 直接启动一个 `node --import tsx` 进程跑服务端（不经过 `npm start`），每个游戏省下约 50 MB 内存（实测，原来被几层包装进程占掉的部分）。端口和密钥存在 pm2 里，不进仓库；`deploy.sh` 照旧 `pm2 restart`。改了 `ecosystem.config.cjs` 之后，要在服务器上带着原来的环境变量 `pm2 delete` 再 `pm2 start ecosystem.config.cjs` 一次。
+
+## 背景音乐
+
+大厅所有页面都循环放 `public/bgm/lobby.mp3`（他用 Suno 做的，原文件在桌面 `bgm v1/游戏大厅.mp3`，2026-10-11 接入）。浏览器要求先点过页面才能出声，所以打开大厅后第一次点击才开始放；点的是游戏卡片这类链接时不放，免得跳页前响一下。播放器是 `src/bgm.tsx`（大厅和各游戏是同一份文件，改了要同步到所有仓库）：一个页面只有一个播放器，从等候房间进牌桌不会从头放；循环处交叉淡化；切到别的标签页时暂停。顶栏的 ♪ 按钮能开关、调音量，设置全站共用（localStorage `gm-music`、`gm-music-volume`，默认开、音量 60）。
+
+换曲子：把新文件放进 `public/bgm/`，用 `~/miniconda3/envs/quant/bin/python -I ~/projects/qa-reports/tools/bgm-analyze.py <文件>` 量出 gain / start / end，改 `src/App.tsx` 里的 `LOBBY_BGM`。本地检查：`URL=http://localhost:<网页端口>/ node ~/projects/qa-reports/tools/bgm-check.mjs` 加 `LOBBY=1`。

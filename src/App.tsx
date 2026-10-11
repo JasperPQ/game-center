@@ -35,6 +35,7 @@ import welcometoCover from "./assets/pixel/covers/welcometo.png";
 import harmoniesCover from "./assets/pixel/covers/harmonies.png";
 import "./egg.css";
 import { ThemeToggle, useTheme } from "./theme";
+import { MusicToggle, useBgm, type BgmTrack } from "./bgm";
 
 /** 线上按路径访问各游戏；本地开发时各游戏跑在自己的端口上。 */
 function gameUrl(path: string, devPort: number): string {
@@ -275,6 +276,10 @@ function gateNotice(gate: string | null): string {
   return "";
 }
 
+// 背景音乐：大厅的所有页面都放这首（浏览器要求先点过页面才出声；点游戏卡片这种链接不算，免得跳页前响一下）。
+// gain / start / end 是按这首曲子量的（见 bgm.tsx）。
+const LOBBY_BGM: BgmTrack = { src: `${import.meta.env.BASE_URL}bgm/lobby.mp3`, gain: 0.83, start: 0.05, end: 146.1 };
+
 function App() {
   const [connected, setConnected] = useState(socket.connected);
   const [entries, setEntries] = useState<GuestbookEntry[]>([]);
@@ -285,6 +290,7 @@ function App() {
   const [notice, setNotice] = useState("");
   // 白天 / 夜间画面，顶栏按钮随时切换；和各个游戏共用同一个选择。
   const [theme, toggleTheme] = useTheme();
+  useBgm(LOBBY_BGM);
   // 登录状态；null 表示未登录，subscribed 决定能否进入游戏。
   const [user, setUser] = useState<PublicAccount | null>(null);
   const [accountNotice, setAccountNotice] = useState(() => gateNotice(landingGate));
@@ -444,6 +450,7 @@ function App() {
             {user ? <><span className="account-entry-name">{user.username}</span><span className="account-entry-status">{accountLabel}</span></> : accountLabel}
           </button>
           <ThemeToggle theme={theme} onToggle={toggleTheme} />
+          <MusicToggle />
           <div className={connected ? "connection-status online" : "connection-status"}>
             <span className="connection-dot" />
             {connected ? "服务已连接" : "连接中…"}
