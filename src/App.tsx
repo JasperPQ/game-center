@@ -36,6 +36,7 @@ import harmoniesCover from "./assets/pixel/covers/harmonies.png";
 import hanabiCover from "./assets/pixel/covers/hanabi.png";
 import carcassonneCover from "./assets/pixel/covers/carcassonne.png";
 import kaijuCover from "./assets/pixel/covers/kaiju.png";
+import farawayCover from "./assets/pixel/covers/faraway.png";
 import "./egg.css";
 import { ThemeToggle, useTheme } from "./theme";
 import { SoundToggle, useBgm, type BgmTrack } from "./gm-sound";
@@ -259,6 +260,14 @@ const GAMES: readonly GameCard[] = [
     description: "每人一只圆滚滚的巨兽，轮流掷 6 颗骰子，可以重掷两次：三个一样的数字得分，闪电攒能量买超能力卡，心回血，爪子打人。城心只容得下一只巨兽，坐镇每回合 +2 分，却要挨所有人的打、还不能回血；被打时可以让位，把城心让给打你的巨兽。先到 20 分，或者把别的巨兽全打倒的人赢。",
     url: gameUrl("/kaiju/", 5297),
     cover: kaijuCover,
+  },
+  {
+    id: "faraway",
+    name: "遥远之地",
+    tagline: "2–6 人 · 同时出牌 · 可加人机",
+    description: "八轮里大家同时从 3 张手牌打出一张，排成自己的探险路线：编号小的先挑公共牌补手，编号比上一张大就能发现圣所。终局从最后一张往前一张张翻开计分，每张卡只看得到自己、右边的卡和所有圣所，所以要求高的卡要早打，提供奇石、灵兽、蓟草的卡要晚打。总分最高的人赢。",
+    url: gameUrl("/faraway/", 5299),
+    cover: farawayCover,
   },
 ];
 
