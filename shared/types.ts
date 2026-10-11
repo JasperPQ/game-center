@@ -5,6 +5,8 @@ export interface GuestbookEntry {
   readonly createdAt: string;
   /** 管理员置顶的时间；置顶的排在最上面，越晚置顶越靠前。 */
   readonly pinnedAt?: string;
+  /** 在哪个游戏里写的（悬浮窗带来的游戏中文名）；大厅里写的没有。 */
+  readonly source?: string;
 }
 
 export interface SubmitGuestbookEntry {

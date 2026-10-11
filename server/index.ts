@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
-import { createServer } from "node:http";
+import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { Server } from "socket.io";
@@ -13,7 +13,10 @@ import type {
   SubmitGuestbookEntry,
 } from "../shared/types.js";
 import { adminTokenHash, verifyAdminToken } from "./admin-token.js";
+import { readBody } from "./body.js";
 import { handleApiRequest } from "./http.js";
+import { clientIp, RateLimiter } from "./rate-limit.js";
+import { GAME_SERVERS } from "./rooms.js";
 import { startPaymentSync } from "./payments.js";
 import { registerWishHandlers } from "./wishes.js";
 
@@ -21,6 +24,9 @@ const GUESTBOOK_LIMIT = 200;
 const GUESTBOOK_RATE_LIMIT_MS = 10_000;
 const ADMIN_RETRY_DELAY_MS = 2_000;
 const guestbookPostTimes = new Map<string, number>();
+// 悬浮窗走 HTTP，按 IP 限频：10 秒 1 条、1 小时 20 条。
+const guestbookIpBurst = new RateLimiter(1, GUESTBOOK_RATE_LIMIT_MS);
+const guestbookIpHourly = new RateLimiter(20, 60 * 60 * 1000);
 const adminFailureTimes = new Map<string, number>();
 
 const guestbookPath = process.env.GUESTBOOK_FILE
@@ -38,7 +44,8 @@ function loadGuestbook(): GuestbookEntry[] {
       && typeof entry.name === "string"
       && typeof entry.message === "string"
       && typeof entry.createdAt === "string"
-      && (entry.pinnedAt === undefined || typeof entry.pinnedAt === "string"),
+      && (entry.pinnedAt === undefined || typeof entry.pinnedAt === "string")
+      && (entry.source === undefined || typeof entry.source === "string"),
     );
   } catch {
     return [];
@@ -99,7 +106,69 @@ function normalizeGuestMessage(value: unknown): string | null {
   return message.length >= 2 && message.length <= 280 ? message : null;
 }
 
+/** 新增一条留言并广播给所有大厅页面。source 是游戏路径（「doudizhu」），换成中文名存下来。 */
+function addGuestbookEntry(rawName: unknown, rawMessage: unknown, source: string | null):
+  { ok: true; data: GuestbookEntry[] } | { ok: false; error: string } {
+  const name = normalizeGuestName(rawName);
+  if (!name) return { ok: false, error: "昵称最多 18 个字符。" };
+  const message = normalizeGuestMessage(rawMessage);
+  if (!message) return { ok: false, error: "留言需为 2–280 个字符。" };
+
+  const sourceName = source ? GAME_SERVERS.find((game) => game.id === source)?.name : undefined;
+  const entry: GuestbookEntry = {
+    id: randomUUID(),
+    name,
+    message,
+    createdAt: new Date().toISOString(),
+    ...(sourceName ? { source: sourceName } : {}),
+  };
+  const beforePost = guestbookEntries;
+  guestbookEntries = trimGuestbook([...guestbookEntries, entry]);
+  try {
+    saveGuestbook();
+  } catch {
+    guestbookEntries = beforePost;
+    return { ok: false, error: "留言暂时无法保存，请稍后重试。" };
+  }
+  const entries = getGuestbookEntries();
+  io.emit("guestbook:updated", entries);
+  return { ok: true, data: entries };
+}
+
+/** POST /api/guestbook：各游戏页面上的「写评价」悬浮窗（public/gc-feedback.js）用。 */
+async function handleGuestbookPost(request: IncomingMessage, response: ServerResponse): Promise<void> {
+  const send = (status: number, body: unknown) => {
+    response.writeHead(status, { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" });
+    response.end(JSON.stringify(body));
+  };
+  const ip = clientIp(request);
+  if (guestbookIpBurst.isLimited(ip) || guestbookIpHourly.isLimited(ip)) {
+    send(429, { error: "留言太频繁了，请稍后再试。" });
+    return;
+  }
+  let body: { name?: unknown; message?: unknown; source?: unknown };
+  try {
+    body = (await readBody(request) ?? {}) as typeof body;
+  } catch (error) {
+    send(400, { error: error instanceof Error ? error.message : "请求失败。" });
+    return;
+  }
+  const source = typeof body.source === "string" && /^[a-z0-9-]{1,32}$/.test(body.source) ? body.source : null;
+  const result = addGuestbookEntry(body.name, body.message, source);
+  if (!result.ok) {
+    send(400, { error: result.error });
+    return;
+  }
+  guestbookIpBurst.hit(ip);
+  guestbookIpHourly.hit(ip);
+  send(200, { ok: true });
+}
+
 export const httpServer = createServer(async (request, response) => {
+  if (request.method === "POST" && request.url === "/api/guestbook") {
+    await handleGuestbookPost(request, response);
+    return;
+  }
   if (request.url === "/health") {
     response.writeHead(200, { "content-type": "application/json" });
     response.end(JSON.stringify({ ok: true, service: "game-center-server" }));
@@ -151,44 +220,18 @@ io.on("connection", (socket) => {
   });
 
   socket.on("guestbook:post", (payload: SubmitGuestbookEntry, ack) => {
-    const name = normalizeGuestName(payload?.name);
-    if (!name) {
-      ack({ ok: false, error: "昵称最多 18 个字符。" });
-      return;
-    }
-    const message = normalizeGuestMessage(payload?.message);
-    if (!message) {
-      ack({ ok: false, error: "留言需为 2–280 个字符。" });
-      return;
-    }
-
     const now = Date.now();
-    const lastPostAt = guestbookPostTimes.get(socket.id) ?? 0;
-    if (now - lastPostAt < GUESTBOOK_RATE_LIMIT_MS) {
+    if (now - (guestbookPostTimes.get(socket.id) ?? 0) < GUESTBOOK_RATE_LIMIT_MS) {
       ack({ ok: false, error: "留言太频繁了，请稍后再试。" });
       return;
     }
-
-    const entry: GuestbookEntry = {
-      id: randomUUID(),
-      name,
-      message,
-      createdAt: new Date(now).toISOString(),
-    };
-    const beforePost = guestbookEntries;
-    guestbookEntries = trimGuestbook([...guestbookEntries, entry]);
-    try {
-      saveGuestbook();
-    } catch {
-      guestbookEntries = beforePost;
-      ack({ ok: false, error: "留言暂时无法保存，请稍后重试。" });
+    const result = addGuestbookEntry(payload?.name, payload?.message, null);
+    if (!result.ok) {
+      ack(result);
       return;
     }
-
     guestbookPostTimes.set(socket.id, now);
-    const entries = getGuestbookEntries();
-    ack({ ok: true, data: entries });
-    io.emit("guestbook:updated", entries);
+    ack(result);
   });
 
   socket.on("admin:verify", (token, ack) => {

@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import type { Wish } from "../shared/types";
 import { formatGuestbookDate } from "./Guestbook";
 import { socket } from "./socket";
@@ -52,18 +52,22 @@ function sameGame(a: string, b: string): boolean {
 }
 
 function WishingWell({
+  wishes,
+  onWishesChange,
   connected,
   adminToken,
   game,
   onGameChange,
 }: {
+  /** 愿望列表由大厅统一订阅（标签上要显示条数）。 */
+  wishes: Wish[];
+  onWishesChange: (wishes: Wish[]) => void;
   connected: boolean;
   adminToken: string;
   /** 游戏名输入框的内容放在大厅里，搜不到游戏时可以一键带过来。 */
   game: string;
   onGameChange: (value: string) => void;
 }) {
-  const [wishes, setWishes] = useState<Wish[]>([]);
   const [voted, setVoted] = useState(readVoted);
   const [note, setNote] = useState("");
   const [name, setName] = useState("");
@@ -75,21 +79,6 @@ function WishingWell({
   // 平时只露出游戏名一栏，点进去或者开始填了才展开说明和昵称，免得把下面的游戏挤得太远。
   const [focused, setFocused] = useState(false);
   const expanded = focused || game.trim() !== "" || note !== "";
-
-  useEffect(() => {
-    const load = () => {
-      socket.emit("wishes:get", (response) => {
-        if (response.ok) setWishes(response.data);
-      });
-    };
-    if (socket.connected) load();
-    socket.on("connect", load);
-    socket.on("wishes:updated", setWishes);
-    return () => {
-      socket.off("connect", load);
-      socket.off("wishes:updated", setWishes);
-    };
-  }, []);
 
   function updateVoted(id: string, on: boolean) {
     setVoted((previous) => {
@@ -118,7 +107,7 @@ function WishingWell({
         setError(response.error);
         return;
       }
-      setWishes(response.data);
+      onWishesChange(response.data);
       // 许愿的人自己算一票；池子里已有同一款游戏时，服务端是给那条 +1。
       const created = response.data.find((wish) => !before.has(wish.id));
       const merged = created ? null : response.data.find((wish) => sameGame(wish.game, game));
@@ -143,7 +132,7 @@ function WishingWell({
         setListError(response.error);
         return;
       }
-      setWishes(response.data);
+      onWishesChange(response.data);
       updateVoted(wish.id, on);
     });
   }
@@ -168,16 +157,7 @@ function WishingWell({
   }
 
   return (
-    <section className="guestbook wishwell" id="wishes" aria-labelledby="wishes-title">
-      <div className="guestbook-heading">
-        <div>
-          <div className="eyebrow"><span className="eyebrow-line" /> 许愿池</div>
-          <h2 id="wishes-title">还想玩什么？许个愿。</h2>
-          <p>写下你想在这里玩到的桌游；看到和你想法一样的，点「想要」+1，票多的优先做。</p>
-        </div>
-        <span className="guestbook-count">{wishes.length} 个愿望</span>
-      </div>
-
+    <div className="wishwell">
       <div className="guestbook-layout">
         <form className="guestbook-form" onSubmit={submit}>
           <label className="field-label" htmlFor="wish-game">想玩的游戏</label>
@@ -269,7 +249,7 @@ function WishingWell({
           )}
         </div>
       </div>
-    </section>
+    </div>
   );
 }
 

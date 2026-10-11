@@ -1,13 +1,14 @@
-import { useEffect, useMemo, useState, type FormEvent, type MouseEvent } from "react";
-import { PRICE_LABEL, TRIAL_DAYS } from "../shared/pricing";
-import type { GuestbookEntry, PublicAccount } from "../shared/types";
-import { Account, readPendingOrder } from "./Account";
+import { useEffect, useMemo, useRef, useState, type FormEvent, type MouseEvent } from "react";
+import { TRIAL_DAYS } from "../shared/pricing";
+import type { GuestbookEntry, PublicAccount, Wish } from "../shared/types";
+import { Account, AccountAdmin, readPendingOrder } from "./Account";
 import { api } from "./api";
 import { adminEntryEnabled, readStoredAdminToken, storeAdminToken } from "./admin";
 import Guestbook, { BoardAdminBar } from "./Guestbook";
 import { socket } from "./socket";
 import WishingWell from "./WishingWell";
-import eggUrl from "./assets/pixel/egg.png";
+import { Letter } from "./Letter";
+import eggUrl from "./assets/pixel/egg-small.png";
 // 每个游戏卡片的封面（PixelLab 生成，见 art/covers.py）
 import gemCover from "./assets/pixel/covers/gem-merchant.png";
 import guandanCover from "./assets/pixel/covers/guandan.png";
@@ -290,6 +291,14 @@ function App() {
   // 留言板和许愿池共用的管理员口令（网址带 ?admin 时才有入口）。
   const [adminToken, setAdminToken] = useState(readStoredAdminToken);
   const [wishGame, setWishGame] = useState("");
+  const [wishes, setWishes] = useState<Wish[]>([]);
+  // 「来访者的声音」里的两个标签：评价 / 许愿池。
+  const [voicesTab, setVoicesTab] = useState<"reviews" | "wishes">("reviews");
+  // 右上角的会员面板；从游戏被拦回来、付款回来时自动打开。
+  const [accountOpen, setAccountOpen] = useState(Boolean(landingGate || landingOrderId));
+  const accountDialog = useRef<HTMLDialogElement>(null);
+  // 没登录时点的那款游戏：登录、开通后面板里给一个「继续进入」。
+  const [pendingGame, setPendingGame] = useState<{ name: string; url: string } | null>(landingNextGame);
   const [query, setQuery] = useState("");
   const visibleGames = useMemo(() => GAMES.filter((game) => matchGame(game, query)), [query]);
 
@@ -301,10 +310,25 @@ function App() {
   /** 搜不到想玩的游戏：把搜的词带进许愿池。 */
   function wishForQuery() {
     setWishGame(query.trim().slice(0, 30));
-    const target = document.getElementById("wishes");
-    target?.scrollIntoView({ behavior: "smooth", block: "start" });
+    setVoicesTab("wishes");
+    document.getElementById("voices")?.scrollIntoView({ behavior: "smooth", block: "start" });
     window.setTimeout(() => document.getElementById("wish-game")?.focus({ preventScroll: true }), 400);
   }
+
+  // 会员面板用原生 <dialog>：Esc、点外面的暗处都能关。
+  useEffect(() => {
+    const dialog = accountDialog.current;
+    if (!dialog) return;
+    if (accountOpen && !dialog.open) dialog.showModal();
+    if (!accountOpen && dialog.open) dialog.close();
+  }, [accountOpen]);
+
+  // 悬浮窗发完评价后的「去看看」链接是 #voices：切到评价标签。
+  useEffect(() => {
+    const onHash = () => { if (window.location.hash === "#voices") setVoicesTab("reviews"); };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
 
   useEffect(() => {
     api.me().then((response) => {
@@ -315,18 +339,14 @@ function App() {
     if (landingParams.has("gate") || landingParams.has("order")) {
       window.history.replaceState(null, "", window.location.pathname);
     }
-    if (landingGate || landingOrderId) scrollToAccount();
   }, []);
 
-  function scrollToAccount() {
-    document.getElementById("account")?.scrollIntoView({ behavior: "smooth", block: "center" });
-  }
-
-  function handleGameClick(event: MouseEvent<HTMLAnchorElement>) {
+  function handleGameClick(event: MouseEvent<HTMLAnchorElement>, game: GameCard) {
     if (user && user.subscribed) return;
     event.preventDefault();
+    setPendingGame(game);
     setAccountNotice(gateNotice(!user ? "login" : user.trialClaimed || user.paid ? "expired" : "trial"));
-    scrollToAccount();
+    setAccountOpen(true);
   }
 
   // 停在大厅的窗口也要知道自己被挤掉了：隔一会儿、以及切回这个标签页时查一次登录状态。
@@ -337,7 +357,7 @@ function App() {
         if (response.user) return;
         setUser(null);
         setAccountNotice(gateNotice(response.kicked ? "kicked" : "login"));
-        scrollToAccount();
+        setAccountOpen(true);
       }).catch(() => {});
     }
     const timer = window.setInterval(check, 30_000);
@@ -360,16 +380,21 @@ function App() {
       socket.emit("guestbook:get", (response) => {
         if (response.ok) setEntries(response.data);
       });
+      socket.emit("wishes:get", (response) => {
+        if (response.ok) setWishes(response.data);
+      });
     };
     const handleDisconnect = () => setConnected(false);
     socket.on("connect", handleConnect);
     socket.on("disconnect", handleDisconnect);
     socket.on("guestbook:updated", setEntries);
+    socket.on("wishes:updated", setWishes);
     socket.connect();
     return () => {
       socket.off("connect", handleConnect);
       socket.off("disconnect", handleDisconnect);
       socket.off("guestbook:updated", setEntries);
+      socket.off("wishes:updated", setWishes);
       socket.disconnect();
     };
   }, []);
@@ -394,8 +419,15 @@ function App() {
     });
   }
 
+  const accountLabel = !user ? "登录 / 注册" : user.lifetime ? "永久会员" : user.subscribed ? (user.trial ? "试用中" : "会员") : "未开通";
+
   return (
     <main className="app-shell">
+      {/* 晶脉的入口：页面左上角一颗不写说明的小彩蛋，点进去就是晶脉的房间页 */}
+      <a className="corner-egg" href={JINGMAI_URL} aria-label="晶脉">
+        <img src={eggUrl} alt="" width={21} height={29} />
+      </a>
+
       <header className="topbar">
         <a className="brand" href="/" aria-label="Game Center 首页">
           <span className="brand-mark" aria-hidden="true"><i /><i /><i /></span>
@@ -404,11 +436,12 @@ function App() {
         <div className="topbar-right">
           <button
             type="button"
-            className="quiet-button account-entry"
-            onClick={scrollToAccount}
-            title={user ? "查看订阅状态" : "登录或注册"}
+            className={user?.subscribed ? "quiet-button account-entry subscribed" : "quiet-button account-entry"}
+            onClick={() => setAccountOpen(true)}
+            aria-haspopup="dialog"
+            title={user ? "会员订阅：查看状态、续费" : "登录或注册"}
           >
-            {user ? user.username : "登录 / 注册"}
+            {user ? <><span className="account-entry-name">{user.username}</span><span className="account-entry-status">{accountLabel}</span></> : accountLabel}
           </button>
           <ThemeToggle theme={theme} onToggle={toggleTheme} />
           <div className={connected ? "connection-status online" : "connection-status"}>
@@ -418,33 +451,41 @@ function App() {
         </div>
       </header>
 
+      <dialog
+        ref={accountDialog}
+        className="account-dialog"
+        aria-label="会员订阅"
+        onClose={() => setAccountOpen(false)}
+        // 点面板外面的暗处收起
+        onClick={(event) => { if (event.target === event.currentTarget) setAccountOpen(false); }}
+      >
+        <div className="account-dialog-panel">
+          <button type="button" className="account-dialog-close quiet-button" onClick={() => setAccountOpen(false)} aria-label="关闭">✕</button>
+          {accountNotice && <p className="account-notice" role="status">{accountNotice}</p>}
+          {pendingGame && user?.subscribed && (
+            <a className="account-continue primary-button" href={pendingGame.url}>
+              继续进入{pendingGame.name} <span aria-hidden="true">→</span>
+            </a>
+          )}
+          <Account user={user} onUserChange={handleUserChange} returningOrderId={landingOrderId} />
+        </div>
+      </dialog>
+
       <section className="hero">
         <div className="eyebrow"><span className="eyebrow-line" /> 和朋友在线开一局</div>
         <div className="hero-title">
           <h1>Game Center</h1>
-          {/* 晶脉的入口：标题右边一颗不写说明的彩蛋，点进去就是晶脉的房间页 */}
-          <a className="hero-egg" href={JINGMAI_URL} aria-label="晶脉">
-            <img src={eggUrl} alt="" width={42} height={58} />
-          </a>
+          {/* 站长写给第一次来的朋友的信：标题右边的信封，点开是信纸 */}
+          <Letter />
         </div>
-        <p>新用户送 {TRIAL_DAYS} 天试用，之后 {PRICE_LABEL}。选一款游戏，创建房间把房间码发给朋友（朋友也要登录）就能开始。</p>
+        <p>欢迎来到咕噜嘎的桌游店，陌生的朋友。试运行期间新用户赠送{TRIAL_DAYS}天会员，祝你玩的愉快。</p>
       </section>
 
-      {accountNotice && <p className="account-notice" role="status">{accountNotice}</p>}
-
-      {landingNextGame && user?.subscribed && (
-        <a className="account-continue primary-button" href={landingNextGame.url}>
-          继续进入{landingNextGame.name} <span aria-hidden="true">→</span>
-        </a>
-      )}
-
-      <Account user={user} onUserChange={handleUserChange} returningOrderId={landingOrderId} />
-
       {adminEntryEnabled && (
-        <BoardAdminBar token={adminToken} connected={connected} onTokenChange={updateAdminToken} />
+        <section className="admin-page" aria-label="管理页">
+          <AccountAdmin />
+        </section>
       )}
-
-      <WishingWell connected={connected} adminToken={adminToken} game={wishGame} onGameChange={setWishGame} />
 
       <section className="games" aria-labelledby="games-title">
         <div className="games-heading">
@@ -471,7 +512,7 @@ function App() {
                 className={`game-card game-card-${game.id}`}
                 href={game.url}
                 key={game.id}
-                onClick={handleGameClick}
+                onClick={(event) => handleGameClick(event, game)}
               >
                 <div className="game-art game-cover" aria-hidden="true">
                   <img src={game.cover} alt="" />
@@ -503,19 +544,71 @@ function App() {
         )}
       </section>
 
-      <Guestbook
-        entries={entries}
-        name={guestName}
-        message={guestMessage}
-        busy={busy}
-        connected={connected}
-        error={error}
-        notice={notice}
-        onNameChange={setGuestName}
-        onMessageChange={setGuestMessage}
-        onSubmit={submit}
-        adminToken={adminToken}
-      />
+      <section className="guestbook voices" id="voices" aria-labelledby="voices-title">
+        <div className="guestbook-heading">
+          <div>
+            <div className="eyebrow"><span className="eyebrow-line" /> 来访者的声音</div>
+            <h2 id="voices-title">{voicesTab === "reviews" ? "写下你的评价。" : "还想玩什么？许个愿。"}</h2>
+            <p>
+              {voicesTab === "reviews"
+                ? "给后来加入的玩家留句话，也看看大家对牌桌的感受。在游戏里也能随时点右下角「写评价」。"
+                : "写下你想在这里玩到的桌游；看到和你想法一样的，点「想要」+1，票多的优先做。"}
+            </p>
+          </div>
+        </div>
+
+        <div className="voices-tabs" role="tablist" aria-label="来访者的声音">
+          <button
+            type="button"
+            role="tab"
+            className={voicesTab === "reviews" ? "voices-tab active" : "voices-tab"}
+            aria-selected={voicesTab === "reviews"}
+            onClick={() => setVoicesTab("reviews")}
+          >
+            评价 <span>{entries.length}</span>
+          </button>
+          <button
+            type="button"
+            role="tab"
+            className={voicesTab === "wishes" ? "voices-tab active" : "voices-tab"}
+            aria-selected={voicesTab === "wishes"}
+            onClick={() => setVoicesTab("wishes")}
+          >
+            许愿池 <span>{wishes.length}</span>
+          </button>
+        </div>
+
+        {adminEntryEnabled && (
+          <BoardAdminBar token={adminToken} connected={connected} onTokenChange={updateAdminToken} />
+        )}
+
+        <div role="tabpanel" hidden={voicesTab !== "reviews"}>
+          <Guestbook
+            entries={entries}
+            name={guestName}
+            message={guestMessage}
+            busy={busy}
+            connected={connected}
+            error={error}
+            notice={notice}
+            onNameChange={setGuestName}
+            onMessageChange={setGuestMessage}
+            onSubmit={submit}
+            adminToken={adminToken}
+          />
+        </div>
+        <div role="tabpanel" hidden={voicesTab !== "wishes"}>
+          <WishingWell
+            wishes={wishes}
+            onWishesChange={setWishes}
+            connected={connected}
+            adminToken={adminToken}
+            game={wishGame}
+            onGameChange={setWishGame}
+          />
+        </div>
+      </section>
+
       <footer className="page-footer">围坐桌边，专注每一次选择。</footer>
     </main>
   );

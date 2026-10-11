@@ -1,35 +1,30 @@
 /*
- * 晶脉的彩蛋入口：首页标题右边的空白处只放一颗像素彩蛋，不写说明，点进去是晶脉的房间页。
- * 白天和夜间都显示。图是 42×58 的像素画，按整数倍显示才清晰：电脑上 2 倍，手机上 1 倍。
+ * 晶脉的彩蛋入口：页面最左上角一颗很小的像素彩蛋，不写说明，点进去是晶脉的房间页。
+ * 白天和夜间都显示。egg-small.png 是 egg.png（42×58）按最近邻缩成的 21×29，原尺寸显示。
+ * 跟着页面滚走（不悬浮），免得盖住手机上的内容。
  */
-.hero-title { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
-.hero-egg {
-  flex: none;
+.corner-egg {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  z-index: 5;
   display: block;
-  /* 蛋比标题高，上下用负边距抵掉，标题区的高度和原来一样 */
-  margin: -18px 0;
-  padding: 4px;
+  padding: 2px;
   line-height: 0;
+  opacity: 0.85;
 }
-.hero-egg img { display: block; width: 84px; height: 116px; image-rendering: pixelated; }
+.corner-egg:hover,
+.corner-egg:focus-visible { opacity: 1; }
+.corner-egg img { display: block; width: 21px; height: 29px; image-rendering: pixelated; }
 /* 指上去时像要孵出来一样左右晃 */
-.hero-egg:hover img,
-.hero-egg:focus-visible img { animation: hero-egg-shake 0.4s steps(1, end) infinite; }
-@keyframes hero-egg-shake {
+.corner-egg:hover img,
+.corner-egg:focus-visible img { animation: corner-egg-shake 0.4s steps(1, end) infinite; }
+@keyframes corner-egg-shake {
   0% { transform: translateX(0); }
-  25% { transform: translateX(-2px); }
+  25% { transform: translateX(-1px); }
   50% { transform: translateX(0); }
-  75% { transform: translateX(2px); }
-}
-@media (max-width: 520px) {
-  /*
-   * 手机上标题已经占满一行，蛋再并排会把标题挤成两行。
-   * 改成蹲在标题右上方的空白里，不占标题那一行的宽度。
-   */
-  .hero-title { position: relative; }
-  .hero-egg { position: absolute; right: 0; bottom: 100%; margin: 0 0 -12px; padding: 0; }
-  .hero-egg img { width: 42px; height: 58px; }
+  75% { transform: translateX(1px); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .hero-egg img { animation: none !important; }
+  .corner-egg img { animation: none !important; }
 }

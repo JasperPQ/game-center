@@ -1,15 +1,15 @@
 /*
- * 「你好，桌友。」右边的信封和点开后的信纸。
- * 信封是 50×34 的像素画，按 2 倍显示（手机也是 2 倍，标题旁边放得下）。
+ * 首页大标题「Game Center」右边的信封（原来晶脉彩蛋的位置）和点开后的信纸。
+ * 信封是 50×34 的像素画，电脑上按 2 倍显示，手机上 1 倍。
  * 信纸是米色纸、深棕字，白天和夜间一样（像信封、彩蛋一样算内容色），所以这份样式不进 day-palette.ts。
  * 字号只用 12 的整数倍：电脑 24px，窄屏 12px；横线间距等于行高，段落之间空一行，字始终压在线上。
  */
-.account-title { display: flex; align-items: flex-end; gap: 16px; }
+.hero-title { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .letter-envelope {
   flex: none;
   display: block;
-  /* 信封比标题高：底边和标题对齐，多出来的往上探进「会员订阅」右边的空白，标题区的高度和原来一样 */
-  margin: -40px 0 0;
+  /* 信封比标题高一点：上下用负边距抵掉，标题区的高度不变 */
+  margin: -8px 0;
   padding: 4px;
   border: 0;
   background: none;
@@ -78,6 +78,12 @@
 /* 矮一点的笔记本屏幕：字号不变，行距收紧一点，整封信一屏放下 */
 @media (min-width: 721px) and (max-height: 820px) {
   .letter-dialog { --line: 30px; }
+}
+@media (max-width: 520px) {
+  /* 手机上标题已经占满一行，信封蹲在标题右上方的空白里，不占标题那一行的宽度 */
+  .hero-title { position: relative; }
+  .letter-envelope { position: absolute; right: 0; bottom: 100%; margin: 0 0 -4px; padding: 0; }
+  .letter-envelope img { width: 50px; height: 34px; }
 }
 @media (max-width: 720px) {
   .letter-dialog { --line: 24px; }

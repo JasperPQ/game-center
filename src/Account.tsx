@@ -2,7 +2,6 @@ import { useEffect, useState, type FormEvent } from "react";
 import { formatYuan, PLAN_MONTHS, PRICE_LABEL, PRICE_NOTE, priceFen, TRIAL_DAYS } from "../shared/pricing";
 import type { AdminGameRooms, AdminRoom, PublicAccount, PublicOrder } from "../shared/types";
 import { api, type PayConfigResponse, type WechatConfigResponse } from "./api";
-import { Letter } from "./Letter";
 
 const ORDER_POLL_MS = 3_000;
 const ORDER_POLL_LIMIT = 40;
@@ -38,8 +37,6 @@ export function readPendingOrder(): string | null {
 }
 
 const ADMIN_TOKEN_KEY = "game-center-account-admin-token";
-// 在网址后加 ?admin 才显示账号管理入口。
-const adminEntryEnabled = new URLSearchParams(window.location.search).has("admin");
 
 function readStoredAdminToken(): string {
   try {
@@ -96,7 +93,6 @@ export function Account({
           <div className="eyebrow"><span className="eyebrow-line" /> 会员订阅</div>
           <div className="account-title">
             <h2 id="account-title">{user ? "你好，桌友。" : "登录后才能开桌。"}</h2>
-            <Letter />
           </div>
           <p>
             {user
@@ -111,8 +107,6 @@ export function Account({
       ) : (
         <LoginRegister onUserChange={onUserChange} trialHint={trialHint} />
       )}
-
-      {adminEntryEnabled && <AccountAdmin />}
     </section>
   );
 }
@@ -526,7 +520,8 @@ function formatAdminTime(value: string | null): string {
 
 const ROOM_STATUS: Record<string, string> = { waiting: "等待开始", playing: "对局中", finished: "已结束" };
 
-function AccountAdmin() {
+/** 管理页（网址带 ?admin 时显示在大厅正文里）：账号、兑换码、订单、各游戏房间。 */
+export function AccountAdmin() {
   const [token, setToken] = useState(() => readStoredAdminToken());
   const [tokenInput, setTokenInput] = useState("");
   const [accounts, setAccounts] = useState<PublicAccount[]>([]);

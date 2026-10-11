@@ -204,6 +204,35 @@ describe("Game Center guestbook", () => {
     expect(unpinned.find((entry) => entry.id === older.id)?.pinnedAt).toBeUndefined();
   });
 
+  it("accepts reviews from the floating widget over HTTP, tagged with the game", async () => {
+    const visitor = await connectClient();
+    const update = new Promise<GuestbookEntry[]>((resolve) => visitor.once("guestbook:updated", resolve));
+    const post = (body: unknown, ip: string) => fetch(`${serverUrl}/api/guestbook`, {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-forwarded-for": ip },
+      body: JSON.stringify(body),
+    });
+
+    const ok = await post({ name: "小李", message: "斗地主的记牌器很好用。", source: "doudizhu" }, "10.0.0.1");
+    expect(ok.status).toBe(200);
+    const broadcast = await update;
+    expect(broadcast.find((entry) => entry.message === "斗地主的记牌器很好用。")).toMatchObject({ name: "小李", source: "斗地主" });
+
+    // 同一个 IP 10 秒内只能发一条
+    const tooSoon = await post({ message: "再来一条评价" }, "10.0.0.1");
+    expect(tooSoon.status).toBe(429);
+
+    // 认不出的来源不标；太短的留言拒绝
+    const unknown = await post({ message: "大厅很好看", source: "not-a-game" }, "10.0.0.2");
+    expect(unknown.status).toBe(200);
+    const list = unwrap(await getGuestbook(visitor));
+    const entry = list.find((candidate) => candidate.message === "大厅很好看");
+    expect(entry?.source).toBeUndefined();
+    expect(entry?.name).toBe("游客");
+    const short = await post({ message: "好" }, "10.0.0.3");
+    expect(short.status).toBe(400);
+  });
+
   describe("wishing well", () => {
     it("lets anyone wish and +1, sorted by votes", async () => {
       const alice = await connectClient();

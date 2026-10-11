@@ -52,16 +52,7 @@ function Guestbook({
   }
 
   return (
-    <section className="guestbook" aria-labelledby="guestbook-title">
-      <div className="guestbook-heading">
-        <div>
-          <div className="eyebrow"><span className="eyebrow-line" /> 来访者的声音</div>
-          <h2 id="guestbook-title">写下你的评价。</h2>
-          <p>给后来加入的玩家留句话，也看看大家对牌桌的感受。</p>
-        </div>
-        <span className="guestbook-count">{entries.length} 条留言</span>
-      </div>
-
+    <>
       {adminError && <p className="feedback feedback-error" role="alert">{adminError}</p>}
 
       <div className="guestbook-layout">
@@ -95,7 +86,7 @@ function Guestbook({
           </button>
         </form>
 
-        <div className="guestbook-list" aria-live="polite" aria-label="游客评价">
+        <div className="guestbook-list" aria-live="polite" aria-label="大家的评价">
           {entries.length > 0 ? entries.map((entry) => (
             <article className={entry.pinnedAt ? "guestbook-entry pinned" : "guestbook-entry"} key={entry.id}>
               <div className="guestbook-entry-avatar">{entry.name.slice(0, 1).toUpperCase()}</div>
@@ -103,6 +94,7 @@ function Guestbook({
                 <div className="guestbook-entry-meta">
                   <strong>{entry.name}</strong>
                   {entry.pinnedAt && <span className="pin-badge">置顶</span>}
+                  {entry.source && <span className="source-badge">来自 {entry.source}</span>}
                   <time dateTime={entry.createdAt}>{formatGuestbookDate(entry.createdAt)}</time>
                   {adminToken && (
                     <>
@@ -137,7 +129,7 @@ function Guestbook({
           )}
         </div>
       </div>
-    </section>
+    </>
   );
 }
 
