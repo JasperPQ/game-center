@@ -36,7 +36,7 @@ import harmoniesCover from "./assets/pixel/covers/harmonies.png";
 import hanabiCover from "./assets/pixel/covers/hanabi.png";
 import "./egg.css";
 import { ThemeToggle, useTheme } from "./theme";
-import { MusicToggle, useBgm, type BgmTrack } from "./bgm";
+import { SoundToggle, useBgm, type BgmTrack } from "./gm-sound";
 
 /** 线上按路径访问各游戏；本地开发时各游戏跑在自己的端口上。 */
 function gameUrl(path: string, devPort: number): string {
@@ -459,7 +459,7 @@ function App() {
             {user ? <><span className="account-entry-name">{user.username}</span><span className="account-entry-status">{accountLabel}</span></> : accountLabel}
           </button>
           <ThemeToggle theme={theme} onToggle={toggleTheme} />
-          <MusicToggle />
+          <SoundToggle />
           <div className={connected ? "connection-status online" : "connection-status"}>
             <span className="connection-dot" />
             {connected ? "服务已连接" : "连接中…"}
