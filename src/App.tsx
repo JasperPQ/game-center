@@ -35,6 +35,7 @@ import welcometoCover from "./assets/pixel/covers/welcometo.png";
 import harmoniesCover from "./assets/pixel/covers/harmonies.png";
 import hanabiCover from "./assets/pixel/covers/hanabi.png";
 import carcassonneCover from "./assets/pixel/covers/carcassonne.png";
+import kaijuCover from "./assets/pixel/covers/kaiju.png";
 import "./egg.css";
 import { ThemeToggle, useTheme } from "./theme";
 import { SoundToggle, useBgm, type BgmTrack } from "./gm-sound";
@@ -250,6 +251,14 @@ const GAMES: readonly GameCard[] = [
     description: "大家轮流抽一块地块，拼到桌上越来越大的地图里：城市接城市、道路接道路、草地接草地。放下后可以派一个小人去占这块上的道路、城市、修道院或田野，等路修通、城墙合拢、修道院四周填满，占着它的人就拿分、小人回到手里。地块用完后，没完成的区域和田野再算一次，总分最高的人赢。",
     url: gameUrl("/carcassonne/", 5296),
     cover: carcassonneCover,
+  },
+  {
+    id: "kaiju",
+    name: "巨兽之城",
+    tagline: "2–6 人 · 掷骰对抗 · 可加人机",
+    description: "每人一只圆滚滚的巨兽，轮流掷 6 颗骰子，可以重掷两次：三个一样的数字得分，闪电攒能量买超能力卡，心回血，爪子打人。城心只容得下一只巨兽，坐镇每回合 +2 分，却要挨所有人的打、还不能回血；被打时可以让位，把城心让给打你的巨兽。先到 20 分，或者把别的巨兽全打倒的人赢。",
+    url: gameUrl("/kaiju/", 5297),
+    cover: kaijuCover,
   },
 ];
 
