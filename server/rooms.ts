@@ -35,6 +35,7 @@ export const GAME_SERVERS: ReadonlyArray<{ id: string; name: string; port: numbe
   { id: "carcassonne", name: "卡卡颂", port: 3025 },
   { id: "kaiju", name: "巨兽之城", port: 3026 },
   { id: "faraway", name: "遥远之地", port: 3028 },
+  { id: "piratebid", name: "海盗叫墩", port: 3029 },
 ];
 
 const TIMEOUT_MS = 4000;

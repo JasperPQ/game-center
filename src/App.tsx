@@ -37,6 +37,7 @@ import hanabiCover from "./assets/pixel/covers/hanabi.png";
 import carcassonneCover from "./assets/pixel/covers/carcassonne.png";
 import kaijuCover from "./assets/pixel/covers/kaiju.png";
 import farawayCover from "./assets/pixel/covers/faraway.png";
+import piratebidCover from "./assets/pixel/covers/piratebid.png";
 import "./egg.css";
 import { ThemeToggle, useTheme } from "./theme";
 import { SoundToggle, useBgm, type BgmTrack } from "./gm-sound";
@@ -268,6 +269,14 @@ const GAMES: readonly GameCard[] = [
     description: "八轮里大家同时从 3 张手牌打出一张，排成自己的探险路线：编号小的先挑公共牌补手，编号比上一张大就能发现圣所。终局从最后一张往前一张张翻开计分，每张卡只看得到自己、右边的卡和所有圣所，所以要求高的卡要早打，提供奇石、灵兽、蓟草的卡要晚打。总分最高的人赢。",
     url: gameUrl("/faraway/", 5299),
     cover: farawayCover,
+  },
+  {
+    id: "piratebid",
+    name: "海盗叫墩",
+    tagline: "2–8 人 · 叫墩吃墩 · 可加人机",
+    description: "十轮牌局，第几轮每人就发几张。看完手牌，大家同时叫出「这轮我能赢几墩」，再一墩一墩出牌：要跟领出的花色，黑旗是王牌；海盗压美人鱼、鬼船长压海盗、美人鱼反过来抓鬼船长，白旗谁都输。叫得正好就加分，叫错就扣分，叫 0 是一场豪赌。十轮后总分最高的人赢。",
+    url: gameUrl("/piratebid/", 5300),
+    cover: piratebidCover,
   },
 ];
 
